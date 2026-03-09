@@ -1,0 +1,11 @@
+{
+  "name": "cost-analysis",
+  "description": "Analyze Claude Code token usage and costs from local session data. Breaks down spend by project, model, and day. Includes model recommendations showing which sessions didn't need Opus.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Chintan Turakhia",
+    "url": "https://github.com/chintanturakhia"
+  },
+  "homepage": "https://github.com/chintanturakhia/cost-analysis-plugin",
+  "repository": "https://github.com/chintanturakhia/cost-analysis-plugin"
+}
