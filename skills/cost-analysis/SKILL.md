@@ -145,13 +145,31 @@ from collections import defaultdict
 # Claude should replace the dict below with live-fetched prices, falling back to these defaults.
 PRICING = {
     'claude-opus-4-6':            (15.00, 75.00, 18.75, 1.50),
+    'claude-opus-4-5-20251101':   (15.00, 75.00, 18.75, 1.50),
     'claude-sonnet-4-6':          (3.00,  15.00, 3.75,  0.30),
+    'claude-sonnet-4-5-20250929': (3.00,  15.00, 3.75,  0.30),
     'claude-haiku-4-5-20251001':  (0.80,  4.00,  1.00,  0.08),
 }
-DEFAULT_PRICING = (15.00, 75.00, 18.75, 1.50)  # Opus as conservative default
+# Prefix-based fallbacks for unrecognized versioned model IDs.
+# Checked in order — haiku first so 'claude-haiku-*' never hits the sonnet check.
+PREFIX_PRICING = [
+    ('claude-haiku',  (0.80,  4.00,  1.00,  0.08)),
+    ('claude-sonnet', (3.00,  15.00, 3.75,  0.30)),
+    ('claude-opus',   (15.00, 75.00, 18.75, 1.50)),
+]
+DEFAULT_PRICING = (15.00, 75.00, 18.75, 1.50)  # Opus as conservative default for truly unknown models
+
+def get_pricing(model):
+    if model in PRICING:
+        return PRICING[model]
+    m = model.lower()
+    for prefix, pricing in PREFIX_PRICING:
+        if m.startswith(prefix):
+            return pricing
+    return DEFAULT_PRICING
 
 def token_cost(model, inp, out, cache_write, cache_read):
-    p = PRICING.get(model, DEFAULT_PRICING)
+    p = get_pricing(model)
     return (inp * p[0] + out * p[1] + cache_write * p[2] + cache_read * p[3]) / 1_000_000
 
 sessions = defaultdict(lambda: {
@@ -163,6 +181,7 @@ sessions = defaultdict(lambda: {
 project_root = os.path.expanduser('~/.claude/projects')
 all_jsonls = glob.glob(os.path.join(project_root, '**', '*.jsonl'), recursive=True)
 
+parse_failures = 0
 for fpath in all_jsonls:
     try:
         with open(fpath, 'r', errors='replace') as f:
@@ -190,7 +209,7 @@ for fpath in all_jsonls:
                 m['cache_read']  += usage.get('cache_read_input_tokens', 0)
                 m['turns']       += 1
     except Exception:
-        pass
+        parse_failures += 1
 
 meta_dir = os.path.expanduser('~/.claude/usage-data/session-meta')
 if os.path.isdir(meta_dir):
@@ -242,10 +261,13 @@ for sid, s in sessions.items():
         'turns': total_turns,
     })
 
+import sys
+if parse_failures > 0:
+    print(f'Warning: {parse_failures} session files could not be parsed and were skipped.', file=sys.stderr)
 print(json.dumps(results))
 ```
 
-Save the output to a variable. If the script fails, report the error and stop.
+Save the stdout to a variable. If the script writes to stderr, surface that warning verbatim in the output. If the script fails entirely, report the error and stop.
 
 ### 3. Apply Filters
 
