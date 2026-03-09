@@ -16,8 +16,8 @@ Analyze your Claude Code token usage and costs from local session data. See exac
 ### Option 1: Plugin dir flag (no install needed)
 
 ```bash
-git clone https://github.com/chintanturakhia/cost-analysis-plugin
-claude --plugin-dir ./cost-analysis-plugin
+git clone https://github.com/ChintanTurakhia/cost-analysis
+claude --plugin-dir ./cost-analysis
 ```
 
 Then run `/cost-analysis:cost-analysis` in any session.
@@ -25,7 +25,7 @@ Then run `/cost-analysis:cost-analysis` in any session.
 ### Option 2: Install via marketplace
 
 ```
-/plugin install https://github.com/chintanturakhia/cost-analysis-plugin
+/plugin install https://github.com/ChintanTurakhia/cost-analysis
 ```
 
 ## Usage
@@ -85,5 +85,5 @@ MODEL RECOMMENDATIONS
 ## Requirements
 
 - Claude Code installed
-- Python 3 (standard on macOS/Linux)
+- Python 3.7+ available as `python3` in PATH (standard on macOS/Linux)
 - Session data in `~/.claude/projects/` (generated automatically by Claude Code)
