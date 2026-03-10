@@ -7,5 +7,6 @@
     "url": "https://github.com/chintanturakhia"
   },
   "homepage": "https://github.com/ChintanTurakhia/cost-analysis",
-  "repository": "https://github.com/ChintanTurakhia/cost-analysis"
+  "repository": "https://github.com/ChintanTurakhia/cost-analysis",
+  "keywords": ["cost", "tokens", "usage", "billing", "analytics", "budget", "model-recommendations", "claude-code"]
 }
