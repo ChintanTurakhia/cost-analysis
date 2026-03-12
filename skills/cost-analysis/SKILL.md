@@ -1,13 +1,13 @@
 ---
 name: cost-analysis
-description: Analyze Claude Code token usage and costs from local session data. Use when asking about token usage, API costs, spending patterns, Claude budget, how much sessions cost, which projects are most expensive, or any breakdown of Claude Code usage by project/date/model.
+description: Analyze Claude Code token usage and costs from local session data. Use when asking about token usage, API costs, spending patterns, Claude budget, how much sessions cost, which projects are most expensive, any breakdown of Claude Code usage by project/date/model, MCP server overhead, MCP tool result sizes, or MCP context bloat.
 user-invocable: true
 tools: Bash, Read, WebFetch
 ---
 
 # Cost Analysis
 
-Analyzes Claude Code token usage and cost from local session data stored in `~/.claude/projects/`. Reads raw conversation files to extract per-turn model and token data, then computes costs using Anthropic's current pricing — including prompt caching tokens. Outputs a clean summary table with totals, trends, and model recommendations.
+Analyzes Claude Code token usage and cost from local session data stored in `~/.claude/projects/`. Reads raw conversation files to extract per-turn model and token data, then computes costs using Anthropic's current pricing — including prompt caching tokens. Outputs a clean summary table with totals, trends, and model recommendations. With `--mcp`, provides deep analysis of MCP server overhead including tool result sizes, schema bloat, and optimization recommendations.
 
 ## Arguments
 
@@ -17,6 +17,8 @@ Analyzes Claude Code token usage and cost from local session data stored in `~/.
 - `--days <N>` — Only include sessions from the last N days (default: all time)
 - `--model <name>` — Filter to sessions that used a specific model (e.g., `opus`, `sonnet`, `haiku`)
 - `--top <N>` — Show only the top N most expensive sessions (default: 10)
+- `--mcp` — Focus analysis on MCP (Model Context Protocol) server overhead: tool result sizes, schema bloat, cost impact, and optimization recommendations
+- `--mcp-server <name>` — Filter MCP analysis to a specific server (e.g., `glean-hosted`, `pencil`). Implies `--mcp`
 
 If no arguments are given, analyze all sessions and show a full breakdown.
 
@@ -28,6 +30,9 @@ If no arguments are given, analyze all sessions and show a full breakdown.
 /cost-analysis --project my-project
 /cost-analysis --days 7 --top 5
 /cost-analysis --model opus
+/cost-analysis --mcp
+/cost-analysis --mcp --days 30
+/cost-analysis --mcp --mcp-server glean-hosted
 ```
 
 ## Pricing Reference
@@ -129,6 +134,8 @@ Parse `$ARGUMENTS` for optional filters:
 - `--project name` → case-insensitive substring match against `cwd` or `project_path`
 - `--model name` → match any model ID containing the substring (e.g., `opus` matches `claude-opus-4-6`)
 - `--top N` → limit session table to N rows (still compute full totals)
+- `--mcp` → enable MCP-focused analysis sections
+- `--mcp-server name` → filter MCP analysis to a specific server name (implies `--mcp`)
 
 ### 2. Collect and Aggregate Session Data
 
@@ -136,7 +143,7 @@ Run the following Python analysis script using `Bash`. This is the core data col
 
 ```python
 #!/usr/bin/env python3
-import json, os, glob
+import json, os, glob, sys
 from datetime import datetime, timedelta
 from collections import defaultdict
 
@@ -150,14 +157,12 @@ PRICING = {
     'claude-sonnet-4-5-20250929': (3.00,  15.00, 3.75,  0.30),
     'claude-haiku-4-5-20251001':  (0.80,  4.00,  1.00,  0.08),
 }
-# Prefix-based fallbacks for unrecognized versioned model IDs.
-# Checked in order — haiku first so 'claude-haiku-*' never hits the sonnet check.
 PREFIX_PRICING = [
     ('claude-haiku',  (0.80,  4.00,  1.00,  0.08)),
     ('claude-sonnet', (3.00,  15.00, 3.75,  0.30)),
     ('claude-opus',   (15.00, 75.00, 18.75, 1.50)),
 ]
-DEFAULT_PRICING = (15.00, 75.00, 18.75, 1.50)  # Opus as conservative default for truly unknown models
+DEFAULT_PRICING = (15.00, 75.00, 18.75, 1.50)
 
 def get_pricing(model):
     if model in PRICING:
@@ -176,6 +181,10 @@ sessions = defaultdict(lambda: {
     'cwd': 'unknown', 'first_ts': '', 'last_ts': '',
     'models': defaultdict(lambda: {'input': 0, 'output': 0, 'cache_write': 0, 'cache_read': 0, 'turns': 0}),
     'first_prompt': '', 'duration_minutes': 0,
+    'first_cache_write': None,  # First cache_creation_input_tokens value (schema overhead proxy)
+    'tool_calls': [],  # List of {'name': str, 'id': str, 'is_mcp': bool}
+    'tool_results': {},  # tool_use_id -> content_length
+    'uses_mcp': False,
 })
 
 project_root = os.path.expanduser('~/.claude/projects')
@@ -189,28 +198,65 @@ for fpath in all_jsonls:
                 line = line.strip()
                 if not line: continue
                 obj = json.loads(line)
-                if obj.get('type') != 'assistant': continue
-                msg = obj.get('message', {})
-                if not isinstance(msg, dict) or 'model' not in msg or 'usage' not in msg: continue
-                sid = obj.get('sessionId', 'unknown')
-                model = msg['model']
-                if model == '<synthetic>': continue
-                usage = msg['usage']
-                cwd = obj.get('cwd', 'unknown')
-                ts = obj.get('timestamp', '')
-                s = sessions[sid]
-                if not s['cwd'] or s['cwd'] == 'unknown': s['cwd'] = cwd
-                if not s['first_ts'] or ts < s['first_ts']: s['first_ts'] = ts
-                if ts > s['last_ts']: s['last_ts'] = ts
-                m = s['models'][model]
-                m['input']       += usage.get('input_tokens', 0)
-                m['output']      += usage.get('output_tokens', 0)
-                m['cache_write'] += usage.get('cache_creation_input_tokens', 0)
-                m['cache_read']  += usage.get('cache_read_input_tokens', 0)
-                m['turns']       += 1
+                otype = obj.get('type')
+
+                if otype == 'assistant':
+                    msg = obj.get('message', {})
+                    if not isinstance(msg, dict): continue
+                    sid = obj.get('sessionId', 'unknown')
+                    cwd = obj.get('cwd', 'unknown')
+                    ts = obj.get('timestamp', '')
+                    s = sessions[sid]
+                    if not s['cwd'] or s['cwd'] == 'unknown': s['cwd'] = cwd
+                    if not s['first_ts'] or ts < s['first_ts']: s['first_ts'] = ts
+                    if ts > s['last_ts']: s['last_ts'] = ts
+
+                    # Token/model tracking
+                    if 'model' in msg and 'usage' in msg:
+                        model = msg['model']
+                        if model == '<synthetic>': continue
+                        usage = msg['usage']
+                        m = s['models'][model]
+                        m['input']       += usage.get('input_tokens', 0)
+                        m['output']      += usage.get('output_tokens', 0)
+                        m['cache_write'] += usage.get('cache_creation_input_tokens', 0)
+                        m['cache_read']  += usage.get('cache_read_input_tokens', 0)
+                        m['turns']       += 1
+                        # Track first cache_creation as schema overhead proxy
+                        cw = usage.get('cache_creation_input_tokens', 0)
+                        if cw > 0 and s['first_cache_write'] is None:
+                            s['first_cache_write'] = cw
+
+                    # Track tool_use blocks for MCP analysis
+                    content = msg.get('content', [])
+                    if isinstance(content, list):
+                        for block in content:
+                            if isinstance(block, dict) and block.get('type') == 'tool_use':
+                                tool_name = block.get('name', '')
+                                is_mcp = tool_name.startswith('mcp__')
+                                s['tool_calls'].append({
+                                    'name': tool_name,
+                                    'id': block.get('id', ''),
+                                    'is_mcp': is_mcp,
+                                })
+                                if is_mcp:
+                                    s['uses_mcp'] = True
+
+                elif otype == 'user':
+                    msg = obj.get('message', {})
+                    if not isinstance(msg, dict): continue
+                    sid = obj.get('sessionId', 'unknown')
+                    content = msg.get('content', [])
+                    if isinstance(content, list):
+                        for block in content:
+                            if isinstance(block, dict) and block.get('type') == 'tool_result':
+                                tuid = block.get('tool_use_id', '')
+                                rc = block.get('content', '')
+                                sessions[sid]['tool_results'][tuid] = len(str(rc))
     except Exception:
         parse_failures += 1
 
+# Enrich from session-meta
 meta_dir = os.path.expanduser('~/.claude/usage-data/session-meta')
 if os.path.isdir(meta_dir):
     for fname in os.listdir(meta_dir):
@@ -226,9 +272,13 @@ if os.path.isdir(meta_dir):
                     sessions[sid]['cwd'] = meta.get('project_path', 'unknown')
                 sessions[sid]['first_prompt'] = meta.get('first_prompt', '')[:80]
                 sessions[sid]['duration_minutes'] = meta.get('duration_minutes', 0)
+                # Fallback MCP detection from session-meta
+                if meta.get('uses_mcp') and not sessions[sid]['uses_mcp']:
+                    sessions[sid]['uses_mcp'] = True
         except Exception:
             pass
 
+# Build results
 results = []
 for sid, s in sessions.items():
     total_cost = 0
@@ -243,6 +293,25 @@ for sid, s in sessions.items():
         total_cache_write += m['cache_write']
         total_cache_read  += m['cache_read']
         total_turns       += m['turns']
+
+    # Compute per-session MCP tool stats
+    mcp_tools = defaultdict(lambda: {'calls': 0, 'total_result_size': 0})
+    non_mcp_tools = defaultdict(lambda: {'calls': 0, 'total_result_size': 0})
+    for tc in s['tool_calls']:
+        result_size = s['tool_results'].get(tc['id'], 0)
+        if tc['is_mcp']:
+            mcp_tools[tc['name']]['calls'] += 1
+            mcp_tools[tc['name']]['total_result_size'] += result_size
+        else:
+            non_mcp_tools[tc['name']]['calls'] += 1
+            non_mcp_tools[tc['name']]['total_result_size'] += result_size
+
+    # Compute aggregate result sizes
+    mcp_total_result_size = sum(t['total_result_size'] for t in mcp_tools.values())
+    mcp_total_calls = sum(t['calls'] for t in mcp_tools.values())
+    non_mcp_total_result_size = sum(t['total_result_size'] for t in non_mcp_tools.values())
+    non_mcp_total_calls = sum(t['calls'] for t in non_mcp_tools.values())
+
     results.append({
         'session_id': sid,
         'cwd': s['cwd'],
@@ -259,15 +328,53 @@ for sid, s in sessions.items():
         'cache_write_tokens': total_cache_write,
         'cache_read_tokens': total_cache_read,
         'turns': total_turns,
+        'uses_mcp': s['uses_mcp'],
+        'first_cache_write': s['first_cache_write'],
+        'mcp_tools': {k: dict(v) for k, v in mcp_tools.items()},
+        'non_mcp_tools': {k: dict(v) for k, v in non_mcp_tools.items()},
+        'mcp_total_result_size': mcp_total_result_size,
+        'mcp_total_calls': mcp_total_calls,
+        'non_mcp_total_result_size': non_mcp_total_result_size,
+        'non_mcp_total_calls': non_mcp_total_calls,
     })
 
-import sys
+# Read MCP configuration
+mcp_config = {'user_servers': {}, 'plugin_servers': {}}
+user_mcp_path = os.path.expanduser('~/.claude/mcp.json')
+if os.path.isfile(user_mcp_path):
+    try:
+        with open(user_mcp_path) as f:
+            user_mcp = json.load(f)
+        for name, details in user_mcp.get('mcpServers', {}).items():
+            mcp_config['user_servers'][name] = {
+                'command': details.get('command', ''),
+                'type': 'stdio' if 'command' in details else details.get('type', 'unknown'),
+            }
+    except Exception:
+        pass
+
+plugins_dir = os.path.expanduser('~/.claude/plugins')
+if os.path.isdir(plugins_dir):
+    for mcp_file in glob.glob(os.path.join(plugins_dir, '**', '.mcp.json'), recursive=True):
+        try:
+            with open(mcp_file) as f:
+                plugin_mcp = json.load(f)
+            plugin_name = os.path.basename(os.path.dirname(mcp_file))
+            for name, details in plugin_mcp.get('mcpServers', {}).items():
+                mcp_config['plugin_servers'][name] = {
+                    'plugin': plugin_name,
+                    'command': details.get('command', ''),
+                    'type': 'stdio' if 'command' in details else details.get('type', 'unknown'),
+                }
+        except Exception:
+            pass
+
 if parse_failures > 0:
     print(f'Warning: {parse_failures} session files could not be parsed and were skipped.', file=sys.stderr)
-print(json.dumps(results))
+print(json.dumps({'sessions': results, 'mcp_config': mcp_config}))
 ```
 
-Save the stdout to a variable. If the script writes to stderr, surface that warning verbatim in the output. If the script fails entirely, report the error and stop.
+The script outputs JSON with two keys: `sessions` (list of session objects) and `mcp_config` (configured MCP servers). Save the stdout to a variable and parse it. If the script writes to stderr, surface that warning verbatim in the output. If the script fails entirely, report the error and stop.
 
 ### 3. Apply Filters
 
@@ -371,6 +478,146 @@ TOKEN COST BREAKDOWN
 - "Cache write tokens are driving 78% of your costs — normal for large codebase sessions."
 - "Sessions this week cost 2.4x more than last week."
 
+#### Brief MCP Summary (when `--mcp` is NOT set)
+
+If `--mcp` is NOT set but there are sessions with `uses_mcp: true`, append a brief summary after Trends:
+
+```
+MCP USAGE DETECTED
+══════════════════
+N of M sessions used MCP servers  |  MCP sessions avg cost: $X.XX  |  Non-MCP avg: $X.XX
+Top MCP tools: mcp__glean-hosted__search (N calls), mcp__pencil__batch_get (N calls)
+
+Run /cost-analysis --mcp for detailed MCP overhead analysis.
+```
+
+If no sessions used MCP, skip this section entirely.
+
+---
+
+#### MCP Analysis Sections (when `--mcp` IS set)
+
+When the `--mcp` flag is present, replace the standard Top Sessions, Daily Spend, Token Cost Breakdown, Trends, and Model Recommendations sections with the following MCP-specific sections. Keep the Header, Project Breakdown, and Model Breakdown sections.
+
+If `--mcp-server <name>` is set, filter all MCP data to only tools whose name contains that server name (e.g., `--mcp-server glean-hosted` filters to tools starting with `mcp__glean-hosted__`).
+
+##### Section A: MCP Server Configuration
+
+List all configured MCP servers from `mcp_config` and whether they were actually used in any session.
+
+```
+MCP SERVER CONFIGURATION
+═══════════════════════════════════════════════════════════════════════════
+
+  Source       Server              Type     Used?
+  ─────────────────────────────────────────────────────────────────────
+  user         excalidraw          stdio    No
+  plugin       glean-hosted        stdio    Yes (14 sessions)
+  plugin       pencil              stdio    Yes (3 sessions)
+  plugin       linear              stdio    No
+
+  Configured: 4 servers  |  Actually used: 2 servers
+```
+
+To determine "Used?" — check if any session has tool calls with names starting with `mcp__<server-name>__`. Count how many sessions used each server.
+
+##### Section B: MCP Tool Usage Breakdown
+
+Table of every MCP tool with call count and avg result size, grouped by server. Aggregate across all filtered sessions.
+
+```
+MCP TOOL USAGE BREAKDOWN
+═══════════════════════════════════════════════════════════════════════════
+
+  Server: glean-hosted
+  Tool                                   Calls    Avg Result    Total Result
+  ────────────────────────────────────────────────────────────────────────
+  mcp__glean-hosted__search                 42       29.5K         1.2M
+  mcp__glean-hosted__chat                   18       45.2K         813K
+  mcp__glean-hosted__read_document          11       91.3K         1.0M
+  mcp__glean-hosted__employee_search         5       12.1K          61K
+  ────────────────────────────────────────────────────────────────────────
+  Subtotal                                  76       40.6K         3.1M
+
+  Server: pencil
+  Tool                                   Calls    Avg Result    Total Result
+  ────────────────────────────────────────────────────────────────────────
+  mcp__pencil__batch_get                    12        8.3K         100K
+  mcp__pencil__get_editor_state              3        2.1K           6K
+  ────────────────────────────────────────────────────────────────────────
+  Subtotal                                  15        7.1K         106K
+```
+
+Format sizes with K suffix for thousands, M for millions of characters.
+
+##### Section C: Context Overhead Analysis
+
+The key analysis section showing how MCP impacts costs.
+
+```
+CONTEXT OVERHEAD ANALYSIS
+═══════════════════════════════════════════════════════════════════════════
+
+  SCHEMA OVERHEAD (first cache_creation_input_tokens per session)
+  ────────────────────────────────────────────────────────────────────────
+  MCP sessions avg first cache write:       X,XXX,XXX tokens
+  Non-MCP sessions avg first cache write:   X,XXX,XXX tokens
+  Estimated schema overhead:                +XXX,XXX tokens  (+XX%)
+
+  RESULT SIZE COMPARISON
+  ────────────────────────────────────────────────────────────────────────
+  Avg MCP tool result:       XX.XK chars
+  Avg non-MCP tool result:    X.XK chars
+  MCP results are XXXx larger than non-MCP results
+
+  COST IMPACT
+  ────────────────────────────────────────────────────────────────────────
+  MCP sessions avg cost:       $XX.XX  (N sessions)
+  Non-MCP sessions avg cost:    $X.XX  (N sessions)
+  MCP sessions cost X.Xx more on average
+```
+
+**Computation notes:**
+- Schema overhead = avg `first_cache_write` in MCP sessions minus avg `first_cache_write` in non-MCP sessions. Only include sessions where `first_cache_write` is not null.
+- Result size comparison = total MCP result chars / total MCP calls vs total non-MCP result chars / total non-MCP calls. Only include sessions where tool results were tracked (result size > 0).
+- Cost impact = avg `total_cost` of MCP sessions vs avg `total_cost` of non-MCP sessions.
+
+##### Section D: MCP Sessions Detail
+
+Table of sessions that used MCPs with their MCP-specific stats.
+
+```
+MCP SESSIONS
+═══════════════════════════════════════════════════════════════════════════
+Date         Project              Cost     MCP Calls   MCP Result Data   Prompt
+──────────────────────────────────────────────────────────────────────────────────
+2026-03-08   my-frontend        $47.23          12          1.4M         Build a new dashboard...
+2026-03-05   my-api-project     $38.91          28          3.1M         Implement plan: rede...
+```
+
+Sort by cost descending. Apply `--top N` limit.
+
+##### Section E: Optimization Recommendations
+
+Rule-based recommendations. Check each condition and output matching recommendations.
+
+```
+MCP OPTIMIZATION RECOMMENDATIONS
+═══════════════════════════════════════════════════════════════════════════
+```
+
+| Condition | Recommendation |
+|---|---|
+| Configured servers > actually used servers | "You have N configured MCP servers but only used M. Remove unused servers (X, Y) to reduce schema overhead — each unused server still loads its full tool schema into context." |
+| Avg MCP result size > 20K chars | "MCP tool results average XXK chars — that's large context consumption. Use more specific queries to reduce result sizes (e.g., narrow Glean searches, request fewer fields)." |
+| Any single tool avg result > 50K chars | "Tool `mcp__X__Y` averages XXK chars per result — consider whether you need all that data or can use a more targeted query." |
+| MCP sessions cost > 1.5x non-MCP sessions | "MCP sessions cost X.Xx more than non-MCP sessions on average. Consider using dedicated sessions for MCP-heavy work to avoid bloating your context in regular coding sessions." |
+| Sessions use < 30% of tools from a loaded server | "You loaded N tools from server `X` but only used M (NN%). Consider if you need this server for most sessions, or load it only when needed." |
+
+Format each as a bullet point with the condition context and the actionable recommendation.
+
+If no recommendations match (unlikely), output: "No significant MCP overhead issues detected."
+
 ---
 
 #### Model Recommendations
@@ -424,6 +671,9 @@ MODEL RECOMMENDATIONS
 - **Python unavailable**: Fall back to `bash` + `jq`, note cache token extraction may be incomplete.
 - **Partial data**: Continue and note "Warning: N files could not be parsed and were skipped."
 - **Unknown model IDs**: Apply Opus pricing as conservative default and note it in output.
+- **`--mcp` with no MCP sessions**: Show the MCP Server Configuration section (if servers are configured) and report "No sessions used MCP tools in the selected period." Skip sections B-E.
+- **`--mcp-server` with unknown server**: Report "No MCP tools found for server 'X'. Available servers: A, B, C." and list servers that were actually used.
+- **Missing MCP config files**: If `~/.claude/mcp.json` or plugin `.mcp.json` files don't exist, still show MCP analysis based on session data — just note "MCP config not found — showing usage data only."
 
 ## Notes on Data Accuracy
 

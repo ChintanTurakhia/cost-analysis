@@ -1,6 +1,6 @@
 # cost-analysis — Claude Code Plugin
 
-Analyze your Claude Code token usage and costs from local session data. See exactly what you spent, by project, model, and day — including which sessions didn't need Opus.
+Analyze your Claude Code token usage and costs from local session data. See exactly what you spent, by project, model, and day — including which sessions didn't need Opus and how much MCP servers are costing you.
 
 ## What it does
 
@@ -10,6 +10,7 @@ Analyze your Claude Code token usage and costs from local session data. See exac
 - **Daily spend** — ASCII bar chart of spend over time
 - **Token cost breakdown** — shows how much cache write vs cache read vs output vs input tokens cost (cache write is usually the dominant driver)
 - **Model recommendations** — classifies each project's work type and tells you which ones didn't need Opus, with estimated savings
+- **MCP analysis** (`--mcp`) — deep dive into MCP server overhead: tool result sizes, schema bloat, cost impact, and optimization recommendations
 
 ## Installation
 
@@ -37,6 +38,9 @@ Then run `/cost-analysis:cost-analysis` in any session.
 /cost-analysis:cost-analysis --project my-project
 /cost-analysis:cost-analysis --days 7 --top 5
 /cost-analysis:cost-analysis --model opus
+/cost-analysis:cost-analysis --mcp
+/cost-analysis:cost-analysis --mcp --days 30
+/cost-analysis:cost-analysis --mcp --mcp-server glean-hosted
 ```
 
 ## Flags
@@ -47,6 +51,21 @@ Then run `/cost-analysis:cost-analysis` in any session.
 | `--project name` | Filter to sessions matching this project name | all projects |
 | `--model name` | Filter to sessions that used this model | all models |
 | `--top N` | Show only the top N most expensive sessions | 10 |
+| `--mcp` | Show MCP server overhead analysis | off |
+| `--mcp-server name` | Filter MCP analysis to a specific server (implies `--mcp`) | all servers |
+
+## MCP analysis
+
+MCP (Model Context Protocol) servers are a significant hidden cost driver. They load full tool schemas into context on session start (~15K+ tokens per server), and their tool results are often 100-300x larger than native tool results.
+
+The `--mcp` flag reveals:
+
+- **Server configuration** — which MCP servers are configured vs actually used
+- **Tool usage breakdown** — call counts and result sizes per MCP tool, grouped by server
+- **Context overhead** — schema overhead comparison (MCP vs non-MCP sessions), result size multipliers, cost impact
+- **Optimization recommendations** — actionable suggestions like removing unused servers, reducing result sizes, or isolating MCP work into dedicated sessions
+
+Even without `--mcp`, the standard report will show a brief "MCP USAGE DETECTED" summary if any sessions used MCP tools, with a pointer to run `--mcp` for details.
 
 ## How it works
 
