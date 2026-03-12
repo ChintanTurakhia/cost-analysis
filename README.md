@@ -31,16 +31,23 @@ Then run `/cost-analysis:cost-analysis` in any session.
 
 ## Usage
 
+Basic cost analysis:
+
 ```
-/cost-analysis:cost-analysis
-/cost-analysis:cost-analysis --days 7
-/cost-analysis:cost-analysis --days 30
-/cost-analysis:cost-analysis --project my-project
-/cost-analysis:cost-analysis --days 7 --top 5
-/cost-analysis:cost-analysis --model opus
-/cost-analysis:cost-analysis --mcp
-/cost-analysis:cost-analysis --mcp --days 30
-/cost-analysis:cost-analysis --mcp --mcp-server glean-hosted
+/cost-analysis                                   # all sessions, full breakdown
+/cost-analysis --days 7                          # last 7 days only
+/cost-analysis --days 30                         # last 30 days
+/cost-analysis --project my-project              # filter to one project
+/cost-analysis --days 7 --top 5                  # last week, top 5 sessions
+/cost-analysis --model opus                      # only Opus sessions
+```
+
+MCP overhead analysis:
+
+```
+/cost-analysis --mcp                             # full MCP overhead report
+/cost-analysis --mcp --days 30                   # MCP analysis for last 30 days
+/cost-analysis --mcp --mcp-server glean-hosted   # filter to one MCP server
 ```
 
 ## Flags
@@ -75,6 +82,8 @@ Reads directly from `~/.claude/projects/**/*.jsonl` — the same session files C
 
 ## Example output
 
+### Standard report (`/cost-analysis --days 7`)
+
 ```
 Claude Code Cost Analysis
 =========================
@@ -99,6 +108,64 @@ MODEL RECOMMENDATIONS
   my-frontend     $183.17  Web editing, pushing branches, updating HTML  → saves ~$146
 
   💰 ESTIMATED SAVINGS IF SONNET USED: $307.00 (27% of total spend)
+
+MCP USAGE DETECTED
+══════════════════
+8 of 21 sessions used MCP servers  |  MCP sessions avg cost: $51.84  |  Non-MCP avg: $103.67
+Top MCP tools: mcp__glean-hosted__search (42 calls), mcp__glean-hosted__chat (5 calls)
+
+Run /cost-analysis --mcp for detailed MCP overhead analysis.
+```
+
+### MCP report (`/cost-analysis --mcp`)
+
+```
+Claude Code Cost Analysis — MCP Overhead Report
+═══════════════════════════════════════════════════════════════════════════
+Period: 2026-02-01 to 2026-03-09  |  Sessions: 104  |  Total: $9,797.11
+Mode: --mcp
+
+MCP SERVER CONFIGURATION
+═══════════════════════════════════════════════════════════════════════════
+  Source       Server              Type     Used?
+  ─────────────────────────────────────────────────────────────────────
+  user         excalidraw          stdio    No
+  plugin       glean-hosted        stdio    Yes (18 sessions)
+  plugin       snowflake           stdio    No
+  plugin       sourcegraph         stdio    No
+
+  Configured: 4 servers  |  Actually used: 1 server
+
+MCP TOOL USAGE BREAKDOWN
+═══════════════════════════════════════════════════════════════════════════
+  Server: glean-hosted
+  Tool                                   Calls    Avg Result    Total Result
+  ──────────────────────────────────────────────────────────────────────────
+  mcp__glean-hosted__search                187       20.6K          3.9M
+  mcp__glean-hosted__read_document          14       19.2K          268K
+  mcp__glean-hosted__employee_search        11        1.8K           19K
+  mcp__glean-hosted__chat                    5       22.0K          110K
+  ──────────────────────────────────────────────────────────────────────────
+  Subtotal                                 219       19.5K          4.3M
+
+CONTEXT OVERHEAD ANALYSIS
+═══════════════════════════════════════════════════════════════════════════
+  SCHEMA OVERHEAD
+  MCP sessions avg first cache write:          34,553 tokens
+  Non-MCP sessions avg first cache write:      28,100 tokens
+  Estimated schema overhead:                   +6,454 tokens  (+23%)
+
+  RESULT SIZE COMPARISON
+  Avg MCP tool result:          19.5K chars
+  Avg non-MCP tool result:       4.4K chars
+  MCP results are 4.4x larger than non-MCP results
+
+MCP OPTIMIZATION RECOMMENDATIONS
+═══════════════════════════════════════════════════════════════════════════
+- You have 4 configured MCP servers but only use 1. Remove unused servers
+  to reduce schema overhead.
+- MCP tool results average 19.5K chars — use more specific queries to
+  reduce result sizes.
 ```
 
 ## Requirements
