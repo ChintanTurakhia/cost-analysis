@@ -87,7 +87,7 @@ Reads directly from `~/.claude/projects/**/*.jsonl` — the same session files C
 ```
 Claude Code Cost Analysis
 =========================
-Pricing source: llmpricecheck.com (live)
+Pricing source: platform.claude.com
 Period: 2026-02-01 to 2026-02-07  |  Sessions: 36  |  Total: $718.38
 Filter: --days 7
 
