@@ -174,9 +174,9 @@ Running `/cost-analysis` itself consumes tokens. Switch to Sonnet first (`/model
 
 | Model  | Estimated Cost Per Run |
 |--------|----------------------|
-| Opus   | $2 – $4              |
-| Sonnet | $0.40 – $0.80        |
-| Haiku  | $0.10 – $0.20        |
+| Opus   | $0.50 – $1.50        |
+| Sonnet | $0.25 – $0.60        |
+| Haiku  | $0.08 – $0.20        |
 
 Cost scales with session count — more sessions means a larger JSON payload for Claude to process. See [COST-OF-RUNNING.md](COST-OF-RUNNING.md) for a full breakdown of what drives the cost.
 

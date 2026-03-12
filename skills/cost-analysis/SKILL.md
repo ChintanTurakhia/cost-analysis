@@ -54,9 +54,9 @@ If both sources are unavailable, fall back to these hardcoded rates (note in out
 
 | Model                         | Input    | Output   | Cache Write | Cache Read |
 |-------------------------------|----------|----------|-------------|------------|
-| claude-opus-4-6               | $15.00   | $75.00   | $18.75      | $1.50      |
+| claude-opus-4-6               | $5.00    | $25.00   | $6.25       | $0.50      |
 | claude-sonnet-4-6             | $3.00    | $15.00   | $3.75       | $0.30      |
-| claude-haiku-4-5-20251001     | $0.80    | $4.00    | $1.00       | $0.08      |
+| claude-haiku-4-5-20251001     | $1.00    | $5.00    | $1.25       | $0.10      |
 
 Unknown models default to Opus pricing (conservative estimate). Always show which pricing source was used in the output header.
 
@@ -151,18 +151,21 @@ from collections import defaultdict
 # Format: { 'model-id': (input_per_1M, output_per_1M, cache_write_per_1M, cache_read_per_1M) }
 # Claude should replace the dict below with live-fetched prices, falling back to these defaults.
 PRICING = {
-    'claude-opus-4-6':            (15.00, 75.00, 18.75, 1.50),
-    'claude-opus-4-5-20251101':   (15.00, 75.00, 18.75, 1.50),
+    'claude-opus-4-6':            (5.00,  25.00, 6.25,  0.50),
+    'claude-opus-4-5-20251101':   (5.00,  25.00, 6.25,  0.50),
+    'claude-opus-4-1-20250805':   (15.00, 75.00, 18.75, 1.50),
+    'claude-opus-4-20250514':     (15.00, 75.00, 18.75, 1.50),
     'claude-sonnet-4-6':          (3.00,  15.00, 3.75,  0.30),
     'claude-sonnet-4-5-20250929': (3.00,  15.00, 3.75,  0.30),
-    'claude-haiku-4-5-20251001':  (0.80,  4.00,  1.00,  0.08),
+    'claude-sonnet-4-20250514':   (3.00,  15.00, 3.75,  0.30),
+    'claude-haiku-4-5-20251001':  (1.00,  5.00,  1.25,  0.10),
 }
 PREFIX_PRICING = [
-    ('claude-haiku',  (0.80,  4.00,  1.00,  0.08)),
+    ('claude-haiku',  (1.00,  5.00,  1.25,  0.10)),
     ('claude-sonnet', (3.00,  15.00, 3.75,  0.30)),
-    ('claude-opus',   (15.00, 75.00, 18.75, 1.50)),
+    ('claude-opus',   (5.00,  25.00, 6.25,  0.50)),
 ]
-DEFAULT_PRICING = (15.00, 75.00, 18.75, 1.50)
+DEFAULT_PRICING = (5.00, 25.00, 6.25, 0.50)
 
 def get_pricing(model):
     if model in PRICING:

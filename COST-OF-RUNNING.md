@@ -6,9 +6,9 @@ Running `/cost-analysis` itself consumes tokens. This page breaks down where tho
 
 | Model  | Estimated Cost | Notes                                              |
 |--------|---------------|----------------------------------------------------|
-| Opus   | $2 – $4       | Cache writes dominate; grows with session history  |
-| Sonnet | $0.40 – $0.80 | 5x cheaper at same token volume                    |
-| Haiku  | $0.10 – $0.20 | Cheapest, but may struggle with complex formatting |
+| Opus   | $0.50 – $1.50 | Cache writes dominate; grows with session history  |
+| Sonnet | $0.25 – $0.60 | Slightly cheaper at same token volume              |
+| Haiku  | $0.08 – $0.20 | Cheapest, but may struggle with complex formatting |
 
 **Recommendation**: Switch to Sonnet before running (`/model sonnet`). The skill's formatting and analysis don't require Opus-level reasoning. Switch back to Opus afterward if needed.
 
@@ -36,17 +36,17 @@ Each run involves ~4 model turns: fetch pricing, run the Python script, process 
 ## What drives cost up
 
 1. **Session count** — The Python script outputs one JSON object per session. At 100 sessions that's ~104KB; at 500 sessions it could be 500KB+. Claude processes all of it.
-2. **Cache write tokens** — The SKILL.md instructions, Python output, and conversation context all get written to the prompt cache. This is the dominant cost at Opus pricing ($18.75/1M tokens).
+2. **Cache write tokens** — The SKILL.md instructions, Python output, and conversation context all get written to the prompt cache. This is the dominant cost at Opus pricing ($6.25/1M tokens).
 3. **Model recommendations** — Reading `history.jsonl` to classify prompts adds tokens proportional to your history size.
 4. **`--mcp` flag** — Adds ~20% more output but doesn't significantly increase input cost since the Python script already collects MCP data in every run.
 
 ## How to minimize cost
 
-- **Use Sonnet** — `/model sonnet` before running. Saves ~80% vs Opus.
+- **Use Sonnet** — `/model sonnet` before running. Saves ~40% vs Opus.
 - **Use `--days N`** — Filtering to recent sessions reduces the Python output size. `--days 7` is much cheaper than analyzing all time.
 - **Use `--project name`** — Narrowing to one project reduces the result set.
 - **Don't run daily** — Weekly or on-demand is sufficient for most users.
 
 ## The irony
 
-Running `/cost-analysis` on Opus daily for a month costs $60–120 just to monitor spending. On Sonnet daily, it's $12–24. Weekly on Sonnet is $2–4/month — a reasonable monitoring overhead.
+Running `/cost-analysis` on Opus daily for a month costs $15–45 just to monitor spending. On Sonnet daily, it's $8–18. Weekly on Sonnet is $1–3/month — a reasonable monitoring overhead.
