@@ -168,6 +168,18 @@ MCP OPTIMIZATION RECOMMENDATIONS
   reduce result sizes.
 ```
 
+## Cost of running this skill
+
+Running `/cost-analysis` itself consumes tokens. Switch to Sonnet first (`/model sonnet`) — the analysis doesn't require Opus-level reasoning.
+
+| Model  | Estimated Cost Per Run |
+|--------|----------------------|
+| Opus   | $2 – $4              |
+| Sonnet | $0.40 – $0.80        |
+| Haiku  | $0.10 – $0.20        |
+
+Cost scales with session count — more sessions means a larger JSON payload for Claude to process. See [COST-OF-RUNNING.md](COST-OF-RUNNING.md) for a full breakdown of what drives the cost.
+
 ## Requirements
 
 - Claude Code installed
