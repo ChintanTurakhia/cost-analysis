@@ -88,30 +88,30 @@ Reads directly from `~/.claude/projects/**/*.jsonl` — the same session files C
 Claude Code Cost Analysis
 =========================
 Pricing source: llmpricecheck.com (live)
-Period: 2026-02-01 to 2026-02-07  |  Sessions: 21  |  Total: $1,122.93
+Period: 2026-02-01 to 2026-02-07  |  Sessions: 36  |  Total: $718.38
 Filter: --days 7
 
 PROJECT BREAKDOWN
 Project              Sessions    Cost      Cache Write   Cache Read
 ────────────────────────────────────────────────────────────────────
-my-api-project              2   $342.77       14.0M        54.7M
-my-frontend                 4   $183.17       11.5M        18.8M
+my-api-project             12   $172.10       30.7M        52.7M
+my-frontend                 3   $161.09       24.8M        68.2M
 ...
 
 MODEL RECOMMENDATIONS
 ═══════════════════════════════════════════════════════════════════
 
   ✅ OPUS JUSTIFIED
-  my-api-project  $342.77  Implementing multi-agent spec against complex codebase
+  my-api-project  $172.10  Implementing multi-agent spec against complex codebase
 
   ❌ DIDN'T NEED OPUS — Sonnet would save ~80%
-  my-frontend     $183.17  Web editing, pushing branches, updating HTML  → saves ~$146
+  my-frontend     $161.09  Web editing, pushing branches, updating HTML  → saves ~$146
 
-  💰 ESTIMATED SAVINGS IF SONNET USED: $307.00 (27% of total spend)
+  💰 ESTIMATED SAVINGS IF SONNET USED: $97.00 (14% of total spend)
 
 MCP USAGE DETECTED
 ══════════════════
-8 of 21 sessions used MCP servers  |  MCP sessions avg cost: $51.84  |  Non-MCP avg: $103.67
+8 of 36 sessions used MCP servers  |  MCP sessions avg cost: $51.84  |  Non-MCP avg: $103.67
 Top MCP tools: mcp__glean-hosted__search (42 calls), mcp__glean-hosted__chat (5 calls)
 
 Run /cost-analysis --mcp for detailed MCP overhead analysis.
@@ -122,15 +122,15 @@ Run /cost-analysis --mcp for detailed MCP overhead analysis.
 ```
 Claude Code Cost Analysis — MCP Overhead Report
 ═══════════════════════════════════════════════════════════════════════════
-Period: 2026-02-01 to 2026-02-09  |  Sessions: 104  |  Total: $8,797.11
-Mode: --mcp
+Period: 2026-02-01 to 2026-02-07  |  Sessions: 36  |  Total: $723.61
+Mode: --mcp --days 7
 
 MCP SERVER CONFIGURATION
 ═══════════════════════════════════════════════════════════════════════════
   Source       Server              Type     Used?
   ─────────────────────────────────────────────────────────────────────
   user         linear              stdio    Yes (20 sessions)
-  plugin       glean-hosted        stdio    Yes (18 sessions)
+  plugin       glean-hosted        stdio    Yes (16 sessions)
   plugin       snowflake           stdio    No
   plugin       sourcegraph         stdio    No
 
@@ -141,12 +141,12 @@ MCP TOOL USAGE BREAKDOWN
   Server: glean-hosted
   Tool                                   Calls    Avg Result    Total Result
   ──────────────────────────────────────────────────────────────────────────
-  mcp__glean-hosted__search                187       20.6K          3.9M
-  mcp__glean-hosted__read_document          14       19.2K          268K
-  mcp__glean-hosted__employee_search        11        1.8K           19K
-  mcp__glean-hosted__chat                    5       22.0K          110K
+  mcp__glean-hosted__search                139       16.1K          2.2M
+  mcp__glean-hosted__read_document          10        1.9K           19K
+  mcp__glean-hosted__employee_search         9        5.6K           50K
+  mcp__glean-hosted__chat                    3       30.5K           92K
   ──────────────────────────────────────────────────────────────────────────
-  Subtotal                                 219       19.5K          4.3M
+  Subtotal                                 161       14.9K          2.4M
 
 CONTEXT OVERHEAD ANALYSIS
 ═══════════════════════════════════════════════════════════════════════════
@@ -173,10 +173,10 @@ MCP OPTIMIZATION RECOMMENDATIONS
 Running `/cost-analysis` itself consumes tokens. Switch to Sonnet first (`/model sonnet`) — the analysis doesn't require Opus-level reasoning.
 
 | Model  | Estimated Cost Per Run |
-|--------|----------------------|
-| Opus   | $0.50 – $1.50        |
-| Sonnet | $0.25 – $0.60        |
-| Haiku  | $0.08 – $0.20        |
+| ------ | ---------------------- |
+| Opus   | $0.50 – $1.50          |
+| Sonnet | $0.25 – $0.60          |
+| Haiku  | $0.08 – $0.20          |
 
 Cost scales with session count — more sessions means a larger JSON payload for Claude to process. See [COST-OF-RUNNING.md](COST-OF-RUNNING.md) for a full breakdown of what drives the cost.
 
