@@ -2,7 +2,7 @@
 name: cost-analysis
 description: Analyze Claude Code token usage and costs from local session data. Use when asking about token usage, API costs, spending patterns, Claude budget, how much sessions cost, which projects are most expensive, any breakdown of Claude Code usage by project/date/model, MCP server overhead, MCP tool result sizes, or MCP context bloat.
 user-invocable: true
-tools: Bash, Read, WebFetch
+tools: Bash, Read
 ---
 
 # Cost Analysis
@@ -37,28 +37,20 @@ If no arguments are given, analyze all sessions and show a full breakdown.
 
 ## Pricing Reference
 
-**Always fetch live pricing before calculating costs.** Do not use hardcoded prices — models update frequently.
-
-### Step 0: Fetch Current Pricing
-
-Fetch pricing from both sources and merge, preferring the most specific/recent data:
-
-1. **Primary**: `https://llmpricecheck.com/` — fetch with WebFetch, extract Anthropic model prices
-2. **Fallback**: `https://sanand0.github.io/llmpricing/` — fetch with WebFetch, extract from the JSON/table data
-
-Look for models matching the pattern `claude-*` and extract input price, output price per 1M tokens. Derive:
-- **Cache write** = 1.25x input price
-- **Cache read** = 0.1x input price
-
-If both sources are unavailable, fall back to these hardcoded rates (note in output that prices may be outdated):
+Use the hardcoded rates below from [platform.claude.com/docs/en/about-claude/pricing](https://platform.claude.com/docs/en/about-claude/pricing). Cache write = 1.25x input, cache read = 0.1x input.
 
 | Model                         | Input    | Output   | Cache Write | Cache Read |
 |-------------------------------|----------|----------|-------------|------------|
 | claude-opus-4-6               | $5.00    | $25.00   | $6.25       | $0.50      |
+| claude-opus-4-5-20251101      | $5.00    | $25.00   | $6.25       | $0.50      |
+| claude-opus-4-1-20250805      | $15.00   | $75.00   | $18.75      | $1.50      |
+| claude-opus-4-20250514        | $15.00   | $75.00   | $18.75      | $1.50      |
 | claude-sonnet-4-6             | $3.00    | $15.00   | $3.75       | $0.30      |
+| claude-sonnet-4-5-20250929    | $3.00    | $15.00   | $3.75       | $0.30      |
+| claude-sonnet-4-20250514      | $3.00    | $15.00   | $3.75       | $0.30      |
 | claude-haiku-4-5-20251001     | $1.00    | $5.00    | $1.25       | $0.10      |
 
-Unknown models default to Opus pricing (conservative estimate). Always show which pricing source was used in the output header.
+Unknown models use prefix-based matching (`claude-opus-*` → Opus 4.6 rate, `claude-sonnet-*` → Sonnet rate, `claude-haiku-*` → Haiku rate). Truly unrecognized models default to Opus 4.6 pricing as a conservative estimate.
 
 **Important**: The `cache_creation_input_tokens` field in usage data represents tokens written to the prompt cache. These are the dominant cost driver in long Claude Code sessions. Always include them in cost calculations.
 
