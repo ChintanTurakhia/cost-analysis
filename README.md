@@ -52,14 +52,14 @@ MCP overhead analysis:
 
 ## Flags
 
-| Flag | Description | Default |
-|---|---|---|
-| `--days N` | Only include sessions from the last N days | all time |
-| `--project name` | Filter to sessions matching this project name | all projects |
-| `--model name` | Filter to sessions that used this model | all models |
-| `--top N` | Show only the top N most expensive sessions | 10 |
-| `--mcp` | Show MCP server overhead analysis | off |
-| `--mcp-server name` | Filter MCP analysis to a specific server (implies `--mcp`) | all servers |
+| Flag                | Description                                                | Default      |
+| ------------------- | ---------------------------------------------------------- | ------------ |
+| `--days N`          | Only include sessions from the last N days                 | all time     |
+| `--project name`    | Filter to sessions matching this project name              | all projects |
+| `--model name`      | Filter to sessions that used this model                    | all models   |
+| `--top N`           | Show only the top N most expensive sessions                | 10           |
+| `--mcp`             | Show MCP server overhead analysis                          | off          |
+| `--mcp-server name` | Filter MCP analysis to a specific server (implies `--mcp`) | all servers  |
 
 ## MCP analysis
 
@@ -88,7 +88,7 @@ Reads directly from `~/.claude/projects/**/*.jsonl` — the same session files C
 Claude Code Cost Analysis
 =========================
 Pricing source: llmpricecheck.com (live)
-Period: 2026-03-02 to 2026-03-09  |  Sessions: 21  |  Total: $1,122.93
+Period: 2026-02-01 to 2026-02-07  |  Sessions: 21  |  Total: $1,122.93
 Filter: --days 7
 
 PROJECT BREAKDOWN
@@ -122,19 +122,19 @@ Run /cost-analysis --mcp for detailed MCP overhead analysis.
 ```
 Claude Code Cost Analysis — MCP Overhead Report
 ═══════════════════════════════════════════════════════════════════════════
-Period: 2026-02-01 to 2026-03-09  |  Sessions: 104  |  Total: $9,797.11
+Period: 2026-02-01 to 2026-02-09  |  Sessions: 104  |  Total: $8,797.11
 Mode: --mcp
 
 MCP SERVER CONFIGURATION
 ═══════════════════════════════════════════════════════════════════════════
   Source       Server              Type     Used?
   ─────────────────────────────────────────────────────────────────────
-  user         excalidraw          stdio    No
+  user         linear              stdio    Yes (20 sessions)
   plugin       glean-hosted        stdio    Yes (18 sessions)
   plugin       snowflake           stdio    No
   plugin       sourcegraph         stdio    No
 
-  Configured: 4 servers  |  Actually used: 1 server
+  Configured: 4 servers  |  Actually used: 2 servers
 
 MCP TOOL USAGE BREAKDOWN
 ═══════════════════════════════════════════════════════════════════════════
