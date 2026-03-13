@@ -1,0 +1,17 @@
+{
+  "name": "cost-analysis",
+  "owner": {
+    "name": "Chintan Turakhia"
+  },
+  "metadata": {
+    "description": "Token usage and cost analysis for Claude Code sessions",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "cost-analysis",
+      "source": "./",
+      "description": "Analyze Claude Code token usage and costs from local session data. Breaks down spend by project, model, and day. Includes model recommendations showing which sessions didn't need Opus. Analyzes MCP server overhead, tool result sizes, and context bloat."
+    }
+  ]
+}
