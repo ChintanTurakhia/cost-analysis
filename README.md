@@ -21,15 +21,6 @@ claude plugin marketplace add ChintanTurakhia/cost-analysis
 claude plugin install cost-analysis@cost-analysis
 ```
 
-Then run `/cost-analysis` in any session.
-
-### Option 2: Plugin dir flag (no install needed)
-
-```bash
-git clone https://github.com/ChintanTurakhia/cost-analysis
-claude --plugin-dir ./cost-analysis
-```
-
 Then run `/cost-analysis:cost-analysis` in any session.
 
 ## Usage
