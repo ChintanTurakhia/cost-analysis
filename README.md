@@ -23,12 +23,6 @@ claude --plugin-dir ./cost-analysis
 
 Then run `/cost-analysis:cost-analysis` in any session.
 
-### Option 2: Install via marketplace
-
-```
-/plugin install https://github.com/ChintanTurakhia/cost-analysis
-```
-
 ## Usage
 
 Basic cost analysis:
@@ -88,84 +82,121 @@ Reads directly from `~/.claude/projects/**/*.jsonl` — the same session files C
 Claude Code Cost Analysis
 =========================
 Pricing source: platform.claude.com
-Period: 2026-02-01 to 2026-02-07  |  Sessions: 36  |  Total: $718.38
+Period: 2026-03-06 to 2026-03-12  |  Sessions: 36  |  Total: $718.38
 Filter: --days 7
 
 PROJECT BREAKDOWN
 Project              Sessions    Cost      Cache Write   Cache Read
 ────────────────────────────────────────────────────────────────────
-my-api-project             12   $172.10       30.7M        52.7M
-my-frontend                 3   $161.09       24.8M        68.2M
-...
+web-dashboard              18   $312.45       55.2M       102.4M
+agent-control              12   $287.03       48.1M        89.7M
+docs-site                   6   $118.90       19.3M        34.6M
+────────────────────────────────────────────────────────────────────
+TOTAL                      36   $718.38      122.6M       226.7M
+
+TOP SESSIONS
+Date         Project              Min       Cost  Prompt
+──────────────────────────────────────────────────────────────────────
+2026-03-11   agent-control         142m   $52.37  Implement multi-agent orchestration with...
+2026-03-10   web-dashboard         98m    $41.23  Redesign dashboard layout and add real-t...
+2026-03-08   web-dashboard         76m    $38.91  Build settings page with form validation...
+
+MODEL BREAKDOWN
+Model                                 Cost
+─────────────────────────────────────────
+claude-opus-4-6                   $694.12
+claude-sonnet-4-6                  $18.76
+claude-haiku-4-5-20251001           $5.50
+
+DAILY SPEND
+  2026-03-12  ████████████████████████  $198.42  (8 sessions)
+  2026-03-11  █████████████████████░░░  $172.36  (7 sessions)
+  2026-03-10  ███████████████████░░░░░  $156.89  (9 sessions)
+  2026-03-09  ██████████████░░░░░░░░░░  $114.23  (6 sessions)
+
+TOKEN COST BREAKDOWN
+  Cache Write Tokens:  63,412,850  →  $482.17  (67%)   ← usually the biggest cost
+  Cache Read Tokens:  477,733,333  →  $143.32  (20%)
+  Output Tokens:        4,310,000  →   $64.65   (9%)
+  Input Tokens:         2,353,333  →   $28.24   (4%)
+  ──────────────────────────────────────────────────
+  TOTAL:                           →  $718.38
 
 MODEL RECOMMENDATIONS
 ═══════════════════════════════════════════════════════════════════
 
   ✅ OPUS JUSTIFIED
-  my-api-project  $172.10  Implementing multi-agent spec against complex codebase
+  agent-control   $287.03  Multi-agent orchestration, complex refactoring
 
   ❌ DIDN'T NEED OPUS — Sonnet would save ~80%
-  my-frontend     $161.09  Web editing, pushing branches, updating HTML  → saves ~$146
+  web-dashboard   $312.45  Updating HTML, pushing branches, CSS changes   → saves ~$281
+  docs-site       $118.90  Writing markdown, basic git operations          → saves ~$107
 
-  💰 ESTIMATED SAVINGS IF SONNET USED: $97.00 (14% of total spend)
+  💰 ESTIMATED SAVINGS IF SONNET USED: $388.00 (54% of total spend)
 
 MCP USAGE DETECTED
 ══════════════════
-8 of 36 sessions used MCP servers  |  MCP sessions avg cost: $51.84  |  Non-MCP avg: $103.67
+10 of 36 sessions used MCP servers  |  MCP sessions avg cost: $15.84  |  Non-MCP avg: $21.54
 Top MCP tools: mcp__glean-hosted__search (42 calls), mcp__glean-hosted__chat (5 calls)
 
 Run /cost-analysis --mcp for detailed MCP overhead analysis.
 ```
 
-### MCP report (`/cost-analysis --mcp`)
+### MCP report (`/cost-analysis --mcp --days 7`)
 
 ```
 Claude Code Cost Analysis — MCP Overhead Report
 ═══════════════════════════════════════════════════════════════════════════
-Period: 2026-02-01 to 2026-02-07  |  Sessions: 36  |  Total: $723.61
+Pricing source: platform.claude.com
+Period: 2026-03-06 to 2026-03-12  |  Sessions: 36  |  Total: $718.38
 Mode: --mcp --days 7
 
 MCP SERVER CONFIGURATION
 ═══════════════════════════════════════════════════════════════════════════
   Source       Server              Type     Used?
   ─────────────────────────────────────────────────────────────────────
-  user         linear              stdio    Yes (20 sessions)
-  plugin       glean-hosted        stdio    Yes (16 sessions)
-  plugin       snowflake           stdio    No
-  plugin       sourcegraph         stdio    No
+  user         excalidraw          stdio    No
+  user         custom-tools        sse      No
+  user         glean-hosted        stdio    Yes (10 sessions)
+  user         pencil              stdio    No
+  user         sourcegraph         stdio    No
 
-  Configured: 4 servers  |  Actually used: 2 servers
+  Configured: 5 servers  |  Actually used: 1 server
 
 MCP TOOL USAGE BREAKDOWN
 ═══════════════════════════════════════════════════════════════════════════
+
   Server: glean-hosted
   Tool                                   Calls    Avg Result    Total Result
   ──────────────────────────────────────────────────────────────────────────
-  mcp__glean-hosted__search                139       16.1K          2.2M
-  mcp__glean-hosted__read_document          10        1.9K           19K
-  mcp__glean-hosted__employee_search         9        5.6K           50K
-  mcp__glean-hosted__chat                    3       30.5K           92K
+  mcp__glean-hosted__search                42       29.5K         1.2M
+  mcp__glean-hosted__chat                   5       45.2K         226K
+  mcp__glean-hosted__read_document          3       91.3K         274K
   ──────────────────────────────────────────────────────────────────────────
-  Subtotal                                 161       14.9K          2.4M
+  Subtotal                                 50       34.4K         1.7M
 
 CONTEXT OVERHEAD ANALYSIS
 ═══════════════════════════════════════════════════════════════════════════
-  SCHEMA OVERHEAD
-  MCP sessions avg first cache write:          34,553 tokens
-  Non-MCP sessions avg first cache write:      28,100 tokens
-  Estimated schema overhead:                   +6,454 tokens  (+23%)
 
   RESULT SIZE COMPARISON
-  Avg MCP tool result:          19.5K chars
-  Avg non-MCP tool result:       4.4K chars
-  MCP results are 4.4x larger than non-MCP results
+  ────────────────────────────────────────────────────────────────────────
+  Avg MCP tool result:       34.4K chars
+  Avg non-MCP tool result:    4.1K chars
+  MCP results are 8.4x larger than non-MCP results
+
+  COST IMPACT
+  ────────────────────────────────────────────────────────────────────────
+  MCP sessions avg cost:       $15.84  (10 sessions)
+  Non-MCP sessions avg cost:   $21.54  (26 sessions)
 
 MCP OPTIMIZATION RECOMMENDATIONS
 ═══════════════════════════════════════════════════════════════════════════
-- You have 4 configured MCP servers but only use 1. Remove unused servers
-  to reduce schema overhead.
-- MCP tool results average 19.5K chars — use more specific queries to
-  reduce result sizes.
+- You have 5 configured MCP servers but only use 1. Remove unused servers
+  (excalidraw, custom-tools, pencil, sourcegraph) to reduce
+  schema overhead — each unused server still loads its full tool schema
+  into context.
+- MCP tool results average 34.4K chars — that's large context consumption.
+  Use more specific queries to reduce result sizes.
 ```
 
 ## Cost of running this skill
