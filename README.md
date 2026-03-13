@@ -185,3 +185,8 @@ Cost scales with session count — more sessions means a larger JSON payload for
 - Claude Code installed
 - Python 3.7+ available as `python3` in PATH (standard on macOS/Linux)
 - Session data in `~/.claude/projects/` (generated automatically by Claude Code)
+
+## Limitations
+
+- **Claude Code only.** Cursor and OpenCode don't store per-session token usage or cost data locally — their billing is server-side. Without local token counts, there's nothing to analyze. If either tool starts writing session-level usage data to disk, support could be added.
+- **30-day data retention.** Claude Code only keeps session data in `~/.claude/projects/` for approximately 30 days. Analysis beyond that window will show incomplete data.
