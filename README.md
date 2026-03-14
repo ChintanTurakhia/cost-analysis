@@ -14,14 +14,17 @@ Analyze your Claude Code token usage and costs from local session data. See exac
 
 ## Installation
 
+Step 1:
 ```
 /plugin marketplace add ChintanTurakhia/cost-analysis
 ```
 
+Step 2:
 ```
 /plugin install cost-analysis@cost-analysis
 ```
 
+Step 3:
 ```
 /reload-plugins
 ```
