@@ -1,8 +1,7 @@
 ---
 name: cost-analysis
 description: Analyze Claude Code token usage and costs from local session data. Use when asking about token usage, API costs, spending patterns, Claude budget, how much sessions cost, which projects are most expensive, any breakdown of Claude Code usage by project/date/model, MCP server overhead, MCP tool result sizes, or MCP context bloat.
-user-invocable: true
-tools: Bash, Read
+version: 0.1.0
 ---
 
 # Cost Analysis
