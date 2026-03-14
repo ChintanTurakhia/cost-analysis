@@ -21,27 +21,27 @@ claude plugin marketplace add ChintanTurakhia/cost-analysis
 claude plugin install cost-analysis@cost-analysis
 ```
 
-Then run `/cost-analysis:cost-analysis` in any session.
+Then run `/cost-analysis:analyze` in any session.
 
 ## Usage
 
 Basic cost analysis:
 
 ```
-/cost-analysis                                   # all sessions, full breakdown
-/cost-analysis --days 7                          # last 7 days only
-/cost-analysis --days 30                         # last 30 days
-/cost-analysis --project my-project              # filter to one project
-/cost-analysis --days 7 --top 5                  # last week, top 5 sessions
-/cost-analysis --model opus                      # only Opus sessions
+/cost-analysis:analyze                                   # all sessions, full breakdown
+/cost-analysis:analyze --days 7                          # last 7 days only
+/cost-analysis:analyze --days 30                         # last 30 days
+/cost-analysis:analyze --project my-project              # filter to one project
+/cost-analysis:analyze --days 7 --top 5                  # last week, top 5 sessions
+/cost-analysis:analyze --model opus                      # only Opus sessions
 ```
 
 MCP overhead analysis:
 
 ```
-/cost-analysis --mcp                             # full MCP overhead report
-/cost-analysis --mcp --days 30                   # MCP analysis for last 30 days
-/cost-analysis --mcp --mcp-server glean-hosted   # filter to one MCP server
+/cost-analysis:analyze --mcp                             # full MCP overhead report
+/cost-analysis:analyze --mcp --days 30                   # MCP analysis for last 30 days
+/cost-analysis:analyze --mcp --mcp-server glean-hosted   # filter to one MCP server
 ```
 
 ## Flags
@@ -76,7 +76,7 @@ Reads directly from `~/.claude/projects/**/*.jsonl` — the same session files C
 
 ## Example output
 
-### Standard report (`/cost-analysis --days 7`)
+### Standard report (`/cost-analysis:analyze --days 7`)
 
 ```
 Claude Code Cost Analysis
@@ -139,10 +139,10 @@ MCP USAGE DETECTED
 10 of 36 sessions used MCP servers  |  MCP sessions avg cost: $15.84  |  Non-MCP avg: $21.54
 Top MCP tools: mcp__glean-hosted__search (42 calls), mcp__glean-hosted__chat (5 calls)
 
-Run /cost-analysis --mcp for detailed MCP overhead analysis.
+Run /cost-analysis:analyze --mcp for detailed MCP overhead analysis.
 ```
 
-### MCP report (`/cost-analysis --mcp --days 7`)
+### MCP report (`/cost-analysis:analyze --mcp --days 7`)
 
 ```
 Claude Code Cost Analysis — MCP Overhead Report
@@ -201,7 +201,7 @@ MCP OPTIMIZATION RECOMMENDATIONS
 
 ## Cost of running this skill
 
-Running `/cost-analysis` itself consumes tokens. Switch to Sonnet first (`/model sonnet`) — the analysis doesn't require Opus-level reasoning.
+Running `/cost-analysis:analyze` itself consumes tokens. Switch to Sonnet first (`/model sonnet`) — the analysis doesn't require Opus-level reasoning.
 
 | Model  | Estimated Cost Per Run |
 | ------ | ---------------------- |
