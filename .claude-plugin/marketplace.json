@@ -5,7 +5,8 @@
   },
   "metadata": {
     "description": "Token usage and cost analysis for Claude Code sessions",
-    "version": "1.0.0"
+    "version": "1.0.0",
+    "pluginRoot": "plugins"
   },
   "plugins": [
     {

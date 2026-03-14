@@ -14,11 +14,8 @@ Analyze your Claude Code token usage and costs from local session data. See exac
 
 ## Installation
 
-### Option 1: Marketplace install (recommended)
-
 ```
-claude plugin marketplace add ChintanTurakhia/cost-analysis
-claude plugin install cost-analysis@cost-analysis
+/install cost-analysis@chintanturakhia
 ```
 
 Then run `/cost-analysis:analyze` in any session.
