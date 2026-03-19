@@ -37,7 +37,9 @@ If no arguments are given, analyze all sessions and show a full breakdown.
 
 ## Pricing Reference
 
-Use the hardcoded rates below from [platform.claude.com/docs/en/about-claude/pricing](https://platform.claude.com/docs/en/about-claude/pricing). Cache write = 1.25x input, cache read = 0.1x input.
+Pricing is fetched live from Anthropic's pricing page before each run (see Step 1 below). If the fetch fails, the hardcoded fallback rates below are used. All rates are per 1M tokens. Cache write = 1.25x input (5-minute cache), cache read = 0.1x input.
+
+**Hardcoded fallback rates:**
 
 | Model                         | Input    | Output   | Cache Write | Cache Read |
 |-------------------------------|----------|----------|-------------|------------|
@@ -119,7 +121,39 @@ Use this to enrich session data with the user's original prompts if session-meta
 
 ## Steps
 
-### 1. Parse Arguments
+### 1. Fetch Live Pricing
+
+Before doing anything else, fetch current pricing from Anthropic's pricing page using `WebFetch`:
+
+- **URL**: `https://platform.claude.com/docs/en/about-claude/pricing`
+- **Prompt**: "Extract the model pricing table. For each model, return the model name, Base Input Tokens price, 5m Cache Writes price, Cache Hits & Refreshes price, and Output Tokens price. Return as a structured list."
+
+Parse the fetched results to build a pricing dict. Map human-readable model names to API model IDs:
+
+| Page name | API model IDs |
+|---|---|
+| Claude Opus 4.6 | `claude-opus-4-6` |
+| Claude Opus 4.5 | `claude-opus-4-5-20251101` |
+| Claude Opus 4.1 | `claude-opus-4-1-20250805` |
+| Claude Opus 4 | `claude-opus-4-20250514` |
+| Claude Sonnet 4.6 | `claude-sonnet-4-6` |
+| Claude Sonnet 4.5 | `claude-sonnet-4-5-20250929` |
+| Claude Sonnet 4 | `claude-sonnet-4-20250514` |
+| Claude Haiku 4.5 | `claude-haiku-4-5-20251001` |
+
+For each model, extract the four rates (all per 1M tokens):
+- **Input** = Base Input Tokens price
+- **Output** = Output Tokens price
+- **Cache Write** = 5m Cache Writes price
+- **Cache Read** = Cache Hits & Refreshes price
+
+If the fetch succeeds and you can extract at least 3 model prices, use the fetched pricing and set `pricing_source = "platform.claude.com (live)"`. Inject the fetched rates into the `PRICING` dict in the Python script in Step 3.
+
+If the fetch fails, times out, or the page structure is unrecognizable, use the hardcoded fallback rates from the Pricing Reference section above and set `pricing_source = "hardcoded fallback"`.
+
+Also update `PREFIX_PRICING` and `DEFAULT_PRICING` in the Python script if the fetched rates differ from the hardcoded defaults — use the latest Opus rate as the default, and the latest rate for each family (opus/sonnet/haiku) as the prefix fallback.
+
+### 2. Parse Arguments
 
 Parse `$ARGUMENTS` for optional filters:
 - `--days N` → compute cutoff date as today minus N days
@@ -129,7 +163,7 @@ Parse `$ARGUMENTS` for optional filters:
 - `--mcp` → enable MCP-focused analysis sections
 - `--mcp-server name` → filter MCP analysis to a specific server name (implies `--mcp`)
 
-### 2. Collect and Aggregate Session Data
+### 3. Collect and Aggregate Session Data
 
 Run the following Python analysis script using `Bash`. This is the core data collection step — do it in a single script invocation to avoid repeated file I/O.
 
@@ -139,9 +173,9 @@ import json, os, glob, sys
 from datetime import datetime, timedelta
 from collections import defaultdict
 
-# PRICING is injected by Claude from live-fetched data before running this script.
+# PRICING: Claude injects live-fetched rates from Step 1 before running this script.
 # Format: { 'model-id': (input_per_1M, output_per_1M, cache_write_per_1M, cache_read_per_1M) }
-# Claude should replace the dict below with live-fetched prices, falling back to these defaults.
+# If live fetch failed, these hardcoded defaults are used as-is.
 PRICING = {
     'claude-opus-4-6':            (5.00,  25.00, 6.25,  0.50),
     'claude-opus-4-5-20251101':   (5.00,  25.00, 6.25,  0.50),
@@ -371,7 +405,7 @@ print(json.dumps({'sessions': results, 'mcp_config': mcp_config}))
 
 The script outputs JSON with two keys: `sessions` (list of session objects) and `mcp_config` (configured MCP servers). Save the stdout to a variable and parse it. If the script writes to stderr, surface that warning verbatim in the output. If the script fails entirely, report the error and stop.
 
-### 3. Apply Filters
+### 4. Apply Filters
 
 Filter the results list based on parsed arguments:
 
@@ -379,7 +413,7 @@ Filter the results list based on parsed arguments:
 - **`--project name`**: Keep only entries where `name.lower()` is a substring of `cwd.lower()`.
 - **`--model name`**: Keep only entries where at least one model in `models` contains `name.lower()`.
 
-### 4. Compute Aggregates
+### 5. Compute Aggregates
 
 From the filtered results, compute:
 
@@ -394,7 +428,7 @@ From the filtered results, compute:
 
 **Grand totals**: total cost, token counts, session count, most expensive session, most active project.
 
-### 5. Present Results
+### 6. Present Results
 
 Display results in this order, using clean markdown tables and human-readable numbers. Format costs with `$` prefix. Use `K` suffix for thousands, `M` for millions of tokens.
 
