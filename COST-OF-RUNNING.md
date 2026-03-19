@@ -36,7 +36,7 @@ Each run involves ~4 model turns: fetch pricing, run the Python script, process 
 ## What drives cost up
 
 1. **Session count** — The Python script outputs one JSON object per session. At 100 sessions that's ~104KB; at 500 sessions it could be 500KB+. Claude processes all of it.
-2. **Cache write tokens** — The SKILL.md instructions, Python output, and conversation context all get written to the prompt cache. This is the dominant cost at Opus pricing ($6.25/1M tokens).
+2. **Cache write tokens** — The SKILL.md instructions, Python output, and conversation context all get written to the prompt cache. This is the dominant cost at Opus pricing (e.g. $6.25/1M tokens for Opus 4.6 cache writes — actual rate fetched live at runtime).
 3. **Model recommendations** — Reading `history.jsonl` to classify prompts adds tokens proportional to your history size.
 4. **`--mcp` flag** — Adds ~20% more output but doesn't significantly increase input cost since the Python script already collects MCP data in every run.
 

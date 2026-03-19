@@ -78,7 +78,7 @@ Even without `--mcp`, the standard report will show a brief "MCP USAGE DETECTED"
 
 ## How it works
 
-Reads directly from `~/.claude/projects/**/*.jsonl` — the same session files Claude Code writes locally. Uses hardcoded pricing from [Anthropic's official pricing page](https://platform.claude.com/docs/en/about-claude/pricing), covering all current Claude models including Opus 4.6, Sonnet 4.6, and Haiku 4.5.
+Reads directly from `~/.claude/projects/**/*.jsonl` — the same session files Claude Code writes locally. Fetches live pricing from [Anthropic's pricing page](https://platform.claude.com/docs/en/about-claude/pricing) before each run, covering all current Claude models including Opus 4.6, Sonnet 4.6, and Haiku 4.5. If the fetch fails or the page structure changes, falls back to hardcoded rates so the analysis always works. The report header shows which pricing source was used.
 
 **Important**: Cache write tokens (`cache_creation_input_tokens`) are the dominant cost driver in most Claude Code sessions and are often 10-100x the size of regular input tokens. This tool always includes them.
 
