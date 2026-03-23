@@ -11,6 +11,8 @@ Analyze your Claude Code token usage and costs from local session data. See exac
 - **Token cost breakdown** — shows how much cache write vs cache read vs output vs input tokens cost (cache write is usually the dominant driver)
 - **Model recommendations** — classifies each project's work type and tells you which ones didn't need Opus, with estimated savings
 - **MCP analysis** (`--mcp`) — deep dive into MCP server overhead: tool result sizes, schema bloat, cost impact, and optimization recommendations
+- **Run history** — compares current totals to your last run (cost, session count, date) in the report header
+- **Weekly reminder** — surfaces a prompt at session start if it's been 7+ days since your last analysis
 
 ## Installation
 
@@ -91,6 +93,7 @@ Claude Code Cost Analysis
 =========================
 Pricing source: platform.claude.com
 Period: 2026-03-06 to 2026-03-12  |  Sessions: 36  |  Total: $718.38
+vs last run (2026-02-27): $501.22 -> $718.38 (+43%)
 Filter: --days 7
 
 PROJECT BREAKDOWN
