@@ -152,7 +152,7 @@ From the filtered results, compute:
 
 **By date** (group by `date` field, YYYY-MM-DD): total cost, session count.
 
-**By model** (aggregate across all sessions): total cost per model, total tokens.
+**By model** (aggregate across all sessions): total cost per model, total tokens. Track which sessions used Opus as primary model and which used Sonnet as primary model — both are inputs to model recommendations (Opus→Sonnet and Sonnet→Haiku tiers).
 
 **Grand totals**: total cost, token counts, session count, most expensive session, most active project.
 

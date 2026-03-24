@@ -124,7 +124,7 @@ If no sessions used MCP, skip this section entirely.
 
 > Note: Classification is based on prompt text heuristics and may not reflect actual task complexity.
 
-For every project that used Opus, check actual prompts from `~/.claude/history.jsonl` and classify the work type.
+For every project, check actual prompts from `~/.claude/history.jsonl` and classify the work type — covering both **Opus sessions** (recommend Sonnet where appropriate) and **Sonnet sessions** (recommend Haiku where appropriate).
 
 **Task type classification:**
 
@@ -139,6 +139,11 @@ For every project that used Opus, check actual prompts from `~/.claude/history.j
 | Writing docs / markdown | "write this to a file", "create a README" | Sonnet — Opus overkill |
 | Browser automation | "fill out the form", "navigate to", "scrape this" | Sonnet — Opus overkill |
 | Q&A / explanation | "what is X", "how do I", "explain" | Sonnet — Opus overkill |
+| Single-file read / simple lookup | "what does X return", "show me line N", "what's in this file" | Haiku — Sonnet overkill |
+| Format / data conversion | "convert this JSON to CSV", "reformat this list" | Haiku — Sonnet overkill |
+| Simple one-step transformation | "rename this variable", "fix this typo", "add a blank line" | Haiku — Sonnet overkill |
+| Short factual Q&A | "what's the flag for X", "what does this error mean" | Haiku — Sonnet overkill |
+| Repetitive mechanical tasks | batch renames, simple regex, counting occurrences | Haiku — Sonnet overkill |
 
 **Example output:**
 
@@ -156,12 +161,19 @@ MODEL RECOMMENDATIONS
   my-frontend     $38.17  Web editing, pushing branches, updating README  -> saves ~$31
   docs-project     $9.50  Writing markdown files, git push               -> saves ~$8
 
-  ESTIMATED SAVINGS IF SONNET USED: $XX.XX (XX% of total spend)
+  DIDN'T NEED SONNET — Haiku would save ~67%
+  scripts-util     $8.40  Single-file lookups, format conversions         -> saves ~$6
+  quick-checks     $3.20  Simple one-step renames, short factual Q&A      -> saves ~$2
+
+  ESTIMATED SAVINGS: $39 (Opus→Sonnet) + $8 (Sonnet→Haiku) = $47 total (XX% of total spend)
 ```
 
 **Rules:**
 - Always check actual prompts from history — don't guess based on project name alone
 - If no prompts are available for a session, mark as "unknown task — check manually"
-- Estimated savings = `opus_cost_for_that_session * 0.80`
+- Opus→Sonnet estimated savings = `opus_session_cost * 0.80`
+- Sonnet→Haiku estimated savings = `sonnet_session_cost * 0.67`
+- Only flag Sonnet sessions where the **primary user model** was Sonnet — Haiku subagents spawned automatically by Claude Code are already optimal and should not be flagged
 - If a session mixed Opus + Haiku subagents, only flag the Opus portion
-- End with one actionable tip, e.g.: "Consider setting Sonnet as your default and using `/model opus` only for complex implementation sessions."
+- Skip the Sonnet→Haiku tier entirely if no Sonnet sessions qualify (don't show an empty section)
+- End with one actionable tip covering both tiers, e.g.: "Consider setting Sonnet as your default and using `/model opus` only for complex implementation sessions. For quick lookups and simple edits, `/model haiku` cuts costs by another 67%."
