@@ -98,6 +98,43 @@ TOKEN COST BREAKDOWN
   TOTAL:                          ->  $XX.XX
 ```
 
+## Cache Efficiency
+
+Shows how well prompt cache writes are being recouped through cache reads. A cache write costs ~1.25x a regular input token up front; if the same context is read back repeatedly, the writes pay off. If sessions are short or one-off, writes often go unrecouped.
+
+**Required data:** per-project cache_write_tokens, cache_read_tokens; cold session counts; overall reuse ratio and savings.
+
+```
+CACHE EFFICIENCY
+===================================================
+Overall reuse ratio: 7.5x  (cache reads / cache writes — higher is better)
+Cold sessions (writes with zero reads): 8 of 36 (22%)
+Estimated savings vs no-cache: $143.32
+
+By project:
+  Project              Reuse    Cold     Cache Write Cost   Savings
+  -------------------------------------------------------------------
+  my-api-project        12.4x   0 / 4         $8.20          $6.80  ✓
+  my-frontend            1.8x   3 / 6         $4.10          $1.10  ← low reuse
+  scripts-util           0.0x   5 / 5         $1.20          $0.00  ← never reused
+
+RECOMMENDATIONS
+  my-frontend (reuse 1.8x): Cache writes aren't being recouped. Try fewer, longer
+  sessions instead of many short ones. Batching related tasks into one session
+  lets the cache warm up and pay for itself.
+
+  scripts-util (0.0x reuse, all sessions cold): These appear to be short one-off
+  tasks where no session ever resumed the same context. Consider using Haiku (lower
+  cache write rate) or consolidating work into a single longer session.
+```
+
+**Rules:**
+- Show this section in the standard report (not just `--mcp`).
+- Only show the RECOMMENDATIONS sub-block if at least one project has `reuse_ratio < 1.5` or `cold_session_rate > 0.5`. If all projects have healthy reuse, replace with: "Cache reuse looks healthy across all projects."
+- If `sum(cache_write_tokens) == 0` across all sessions, skip this section entirely.
+- Savings estimate uses per-model rates. For sessions with mixed models, use the model that generated the most cache write tokens.
+- A reuse ratio > 5x is healthy. 1–5x is marginal. < 1x means most writes were wasted.
+
 ## Trends and Observations
 
 3-5 brief observations based on the data. Examples:

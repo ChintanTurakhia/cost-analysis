@@ -111,8 +111,23 @@
         "If session count exceeds 200 and no --days/--since/--until flag was used, a warning message appears before the report body",
         "Warning mentions the session count and suggests using '--days 30' or similar",
         "Standard 'PROJECT BREAKDOWN' section still appears after the warning",
-        "Standard 'MODEL BREAKDOWN' section still appears",
+        "Standard 'MODEL RECOMMENDATIONS' section still appears",
         "Warning does not prevent the report from being generated"
+      ]
+    },
+    {
+      "id": 9,
+      "prompt": "/cost-analysis:analyze --days 30",
+      "expected_output": "Full report including a CACHE EFFICIENCY section showing reuse ratio, cold session count, estimated savings, per-project breakdown, and actionable recommendations for projects with low cache reuse.",
+      "files": [],
+      "expectations": [
+        "Report includes a 'CACHE EFFICIENCY' section header",
+        "CACHE EFFICIENCY section shows an overall reuse ratio (e.g., 'Nx')",
+        "CACHE EFFICIENCY section shows cold session count and percentage",
+        "CACHE EFFICIENCY section shows estimated savings vs no-cache in dollars",
+        "If any project has reuse_ratio < 1.5 or cold_session_rate > 0.5, a RECOMMENDATIONS sub-block appears with actionable advice",
+        "If all cache_write_tokens are zero across all sessions, CACHE EFFICIENCY section is omitted entirely",
+        "If cache reuse is healthy across all projects, section ends with 'Cache reuse looks healthy across all projects' instead of RECOMMENDATIONS block"
       ]
     }
   ]

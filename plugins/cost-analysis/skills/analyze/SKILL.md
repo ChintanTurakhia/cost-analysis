@@ -156,6 +156,13 @@ From the filtered results, compute:
 
 **Grand totals**: total cost, token counts, session count, most expensive session, most active project.
 
+**Cache efficiency** (compute per project and overall):
+- `reuse_ratio = sum(cache_read_tokens) / sum(cache_write_tokens)` — how many times each cached token is read back on average. Higher is better; < 1x means most writes are never recouped.
+- `cold_sessions` = sessions where `cache_write_tokens > 1000` and `cache_read_tokens == 0` (paid for a cache write but got nothing back)
+- `cold_session_rate` = cold sessions / sessions with any cache activity
+- `cache_savings` = `sum(cache_read_tokens) * (input_rate - cache_read_rate)` — how much was saved vs paying full input price for those tokens (use per-model rates, default to Opus if mixed)
+- Flag projects where `reuse_ratio < 1.5` or `cold_session_rate > 0.5`
+
 **Cost per hour**: Compute `$/hr = total_cost / (sum(duration_min) / 60)`. Include in the report header alongside total cost. Skip if `sum(duration_min) == 0`.
 
 **Budget pace** (only if `--budget N` was given):
