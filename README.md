@@ -26,10 +26,9 @@ Step 2:
 /plugin install cost-analysis@cost-analysis
 ```
 
-Step 3:
-```
-/reload-plugins
-```
+Step 3: Restart Claude Code.
+
+> **Note**: `/reload-plugins` refreshes the command registry but doesn't fully reload skill files. A full restart is required for the plugin to work correctly.
 
 Then run `/cost-analysis:analyze` in any session.
 
