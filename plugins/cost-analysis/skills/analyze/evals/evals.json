@@ -1,0 +1,56 @@
+{
+  "skill_name": "analyze",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "/cost-analysis:analyze",
+      "expected_output": "Full cost report with project breakdown, top sessions, model breakdown, daily spend chart, token cost breakdown, model recommendations, and MCP usage summary if applicable.",
+      "files": [],
+      "expectations": [
+        "Report includes a PROJECT BREAKDOWN section",
+        "Report includes a MODEL BREAKDOWN section",
+        "Report includes a TOKEN COST BREAKDOWN section",
+        "Report includes a DAILY SPEND section",
+        "Report includes a MODEL RECOMMENDATIONS section",
+        "Header shows pricing source (either live or hardcoded fallback)",
+        "Grand total cost is shown in the header"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "/cost-analysis:analyze --days 7",
+      "expected_output": "Same report as full analysis but filtered to last 7 days. Period in header should reflect a 7-day window.",
+      "files": [],
+      "expectations": [
+        "Header period spans 7 days or fewer",
+        "Report includes PROJECT BREAKDOWN, MODEL BREAKDOWN, DAILY SPEND sections",
+        "If run history exists, a 'vs last run' comparison line appears in the header"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "/cost-analysis:analyze --days 30 --top 5",
+      "expected_output": "Report filtered to last 30 days, showing only top 5 most expensive sessions in the TOP SESSIONS table. All other sections (project breakdown, model breakdown, etc.) still show full 30-day aggregates.",
+      "files": [],
+      "expectations": [
+        "TOP SESSIONS table contains at most 5 rows",
+        "Header period spans 30 days or fewer",
+        "PROJECT BREAKDOWN still shows all projects (not top-5 limited)"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "/cost-analysis:analyze --mcp",
+      "expected_output": "MCP-focused report. Standard project breakdown and model breakdown are kept, but Top Sessions / Daily Spend / Token Cost Breakdown / Model Recommendations are replaced by MCP sections: Server Configuration, Tool Usage Breakdown, Context Overhead Analysis, MCP Sessions Detail, and Optimization Recommendations.",
+      "files": [],
+      "expectations": [
+        "Report includes MCP SERVER CONFIGURATION section",
+        "Report includes MCP TOOL USAGE BREAKDOWN section",
+        "Report includes CONTEXT OVERHEAD ANALYSIS section",
+        "Report includes MCP OPTIMIZATION RECOMMENDATIONS section",
+        "Standard MODEL RECOMMENDATIONS section is NOT shown",
+        "Standard DAILY SPEND section is NOT shown"
+      ]
+    }
+  ]
+}

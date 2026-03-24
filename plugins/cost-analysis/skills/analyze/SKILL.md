@@ -2,7 +2,7 @@
 name: analyze
 description: Analyze Claude Code token usage and costs from local session data. Use when asking about token usage, API costs, spending patterns, Claude budget, how much sessions cost, which projects are most expensive, any breakdown of Claude Code usage by project/date/model, MCP server overhead, MCP tool result sizes, MCP context bloat, or MCP optimization.
 user-invocable: true
-tools: Bash, Read
+tools: Bash, Read, WebFetch
 ---
 
 # Cost Analysis
@@ -92,7 +92,7 @@ Parse `$ARGUMENTS` for optional filters:
 
 ### 3. Collect and Aggregate Session Data
 
-Run the Python analysis script at `scripts/analyze.py` using Bash. If live pricing was fetched in Step 1, pass the rates via the `--pricing-json` CLI argument:
+Run the Python analysis script at `scripts/analyze.py` using Bash. The script path `scripts/analyze.py` is relative to this skill file's location — resolve it to an absolute path when invoking Bash. If live pricing was fetched in Step 1, pass the rates via the `--pricing-json` CLI argument:
 
 ```bash
 python3 scripts/analyze.py --pricing-json '{"claude-opus-4-6": [5.0, 25.0, 6.25, 0.5], ...}'

@@ -20,7 +20,7 @@ Each run involves ~4 model turns: fetch pricing, run the Python script, process 
 
 | Component                        | Estimated Size | Notes                                              |
 |----------------------------------|---------------|----------------------------------------------------|
-| SKILL.md loaded into context     | ~15K tokens   | 680 lines of instructions                          |
+| SKILL.md + reference files       | ~15K tokens   | 528 lines of instructions (SKILL.md: 184, output-format.md: 158, mcp-analysis.md: 123, pricing.md: 44, gotchas.md: 19). analyze.py is 301 lines but is not loaded into context — it is executed via Bash. |
 | WebFetch pricing (2 calls)       | ~2–3K tokens  | HTML-to-markdown results from pricing sites        |
 | Python script JSON output        | ~25–35K tokens| ~104KB for 104 sessions — **scales with session count** |
 | history.jsonl (model recs)       | ~5–15K tokens | Read to classify task types for recommendations    |
