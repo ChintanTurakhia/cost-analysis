@@ -116,7 +116,7 @@ Filter the results list based on parsed arguments:
 
 ### 5. Compute Aggregates
 
-Before computing aggregates, check if `${CLAUDE_PLUGIN_DATA}/run-history.jsonl` exists. If it does, read the last entry and include a comparison line in the report header:
+Before computing aggregates, resolve the data directory with this fallback: `PLUGIN_DATA="${CLAUDE_PLUGIN_DATA:-$HOME/.claude/cost-analysis-data}"`. Check if `$PLUGIN_DATA/run-history.jsonl` exists. If it does, read the last entry and include a comparison line in the report header:
 
 ```
 vs last run (2026-03-11): $718.38 -> $502.15 (-30%)
@@ -142,7 +142,15 @@ When `--mcp` is set, read `references/mcp-analysis.md` for the MCP-specific repo
 
 ### 7. Save Run Summary
 
-After presenting results, append a single JSON line to `${CLAUDE_PLUGIN_DATA}/run-history.jsonl`:
+After presenting results, use Bash to append a single JSON line to the run history file:
+
+```bash
+PLUGIN_DATA="${CLAUDE_PLUGIN_DATA:-$HOME/.claude/cost-analysis-data}"
+mkdir -p "$PLUGIN_DATA"
+echo '{...}' >> "$PLUGIN_DATA/run-history.jsonl"
+```
+
+The JSON line to append:
 
 ```json
 {
@@ -157,8 +165,6 @@ After presenting results, append a single JSON line to `${CLAUDE_PLUGIN_DATA}/ru
   "period_end": "2026-03-18"
 }
 ```
-
-Create the file if it doesn't exist. Use Bash to append.
 
 ## Error Handling
 
