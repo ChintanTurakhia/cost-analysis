@@ -8,6 +8,8 @@ outputs structured JSON for report generation.
 Usage:
     python3 analyze.py
     python3 analyze.py --pricing-json '{"claude-opus-4-6": [5.0, 25.0, 6.25, 0.5]}'
+    python3 analyze.py --since 2026-03-01 --until 2026-03-15
+    python3 analyze.py --max-sessions 100
 """
 import json, os, glob, sys, argparse
 from collections import defaultdict
@@ -87,6 +89,12 @@ def main():
     parser = argparse.ArgumentParser(description='Analyze Claude Code session costs')
     parser.add_argument('--pricing-json', type=str, default=None,
                         help='JSON string of pricing overrides: {"model-id": [input, output, cache_write, cache_read]}')
+    parser.add_argument('--since', type=str, default=None,
+                        help='Include only sessions on or after this date (YYYY-MM-DD)')
+    parser.add_argument('--until', type=str, default=None,
+                        help='Include only sessions on or before this date (YYYY-MM-DD)')
+    parser.add_argument('--max-sessions', type=int, default=None,
+                        help='Maximum number of sessions to include (keeps most recent, truncates oldest)')
     args = parser.parse_args()
 
     if args.pricing_json:
@@ -292,9 +300,37 @@ def main():
             except Exception:
                 pass
 
+    # Apply date range filtering
+    if args.since or args.until:
+        filtered = []
+        for r in results:
+            date = r['date']
+            if date == 'unknown':
+                continue
+            if args.since and date < args.since:
+                continue
+            if args.until and date > args.until:
+                continue
+            filtered.append(r)
+        results = filtered
+
+    # Apply max-sessions cap (keep most recent, truncate oldest)
+    truncated = False
+    truncated_count = 0
+    if args.max_sessions is not None and len(results) > args.max_sessions:
+        results.sort(key=lambda r: r.get('timestamp', ''), reverse=True)
+        truncated_count = len(results) - args.max_sessions
+        results = results[:args.max_sessions]
+        truncated = True
+
     if parse_failures > 0:
         print(f'Warning: {parse_failures} session files could not be parsed and were skipped.', file=sys.stderr)
-    print(json.dumps({'sessions': results, 'mcp_config': mcp_config}))
+
+    output = {'sessions': results, 'mcp_config': mcp_config}
+    if truncated:
+        output['truncated'] = True
+        output['truncated_count'] = truncated_count
+    print(json.dumps(output))
 
 
 if __name__ == '__main__':

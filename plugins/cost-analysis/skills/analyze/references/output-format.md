@@ -12,27 +12,34 @@ Shows pricing source, period, and grand totals at a glance.
 Claude Code Cost Analysis
 ========================
 Pricing source: platform.claude.com (live)
-Period: 2026-03-11 to 2026-03-18  |  Sessions: 36  |  Total Cost: $718.38
+Period: 2026-03-11 to 2026-03-18  |  Sessions: 36  |  Total Cost: $718.38  |  $/hr: $24.61
 vs last run (2026-03-11): $502.15 -> $718.38 (+43%)
+Budget: $500/month | Pace: $612/month | Status: OVER (+22%)
 ```
 
 The "vs last run" line is only shown when run history exists and the previous run used matching filters. See Step 7 in SKILL.md.
+
+The `$/hr` metric is omitted if total session duration is zero.
+
+The "Budget:" line is only shown when `--budget N` was given. See Step 5 in SKILL.md.
 
 ## Summary by Project
 
 Breaks down spend by project directory. Sort by total cost descending.
 
-**Required data per row:** project name, session count, cost, input tokens, output tokens, cache write tokens, cache read tokens.
+**Required data per row:** project name, session count, cost, $/hr, input tokens, output tokens, cache write tokens, cache read tokens.
 
 ```
 PROJECT BREAKDOWN
-Project                      Sessions      Cost    Input   Output  Cache Write  Cache Read
----------------------------------------------------------------------------------------------
-my-api-project                      4   $47.23    823K    142K        2.1M        5.3M
-my-frontend                         2   $12.10    201K     38K        0.6M        1.1M
----------------------------------------------------------------------------------------------
-TOTAL                               6   $59.33      ...     ...         ...         ...
+Project                      Sessions      Cost    $/hr    Input   Output  Cache Write  Cache Read
+---------------------------------------------------------------------------------------------------
+my-api-project                      4   $47.23  $28.40    823K    142K        2.1M        5.3M
+my-frontend                         2   $12.10  $16.25    201K     38K        0.6M        1.1M
+---------------------------------------------------------------------------------------------------
+TOTAL                               6   $59.33  $24.61      ...     ...         ...         ...
 ```
+
+Omit the `$/hr` column for individual projects if `duration_min` is 0 for all sessions in that project.
 
 ## Top Sessions by Cost
 
@@ -114,6 +121,8 @@ Run /cost-analysis --mcp for detailed MCP overhead analysis.
 If no sessions used MCP, skip this section entirely.
 
 ## Model Recommendations
+
+> Note: Classification is based on prompt text heuristics and may not reflect actual task complexity.
 
 For every project that used Opus, check actual prompts from `~/.claude/history.jsonl` and classify the work type.
 

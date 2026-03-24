@@ -14,11 +14,16 @@ Analyzes Claude Code token usage and cost from local session data stored in `~/.
 `$ARGUMENTS` is an optional filter string. Supported flags:
 
 - `--project <name>` — Filter to sessions whose working directory matches `<name>` (case-insensitive substring match on the project path)
-- `--days <N>` — Only include sessions from the last N days (default: all time)
+- `--days <N>` — Only include sessions from the last N days (shorthand for `--since (today - N days)`). Default: all time
+- `--since <YYYY-MM-DD>` — Include only sessions on or after this date
+- `--until <YYYY-MM-DD>` — Include only sessions on or before this date. Note: `--days N` remains a shorthand for `--since (today - N days)`. All three can be combined.
 - `--model <name>` — Filter to sessions that used a specific model (e.g., `opus`, `sonnet`, `haiku`)
 - `--top <N>` — Show only the top N most expensive sessions (default: 10)
 - `--mcp` — Focus analysis on MCP (Model Context Protocol) server overhead: tool result sizes, schema bloat, cost impact, and optimization recommendations
 - `--mcp-server <name>` — Filter MCP analysis to a specific server (e.g., `glean-hosted`, `pencil`). Implies `--mcp`
+- `--max-sessions <N>` — Hard cap on session count. If session count after date filtering exceeds N, truncates the oldest sessions. Use with caution — truncation may skew aggregates.
+- `--save [path]` — Write the formatted report to a markdown file. Default path: `~/claude-cost-YYYY-MM-DD.md`.
+- `--budget <N>` — Set a monthly spending threshold in dollars. Adds a budget status line (pace vs. limit) to the report header.
 
 If no arguments are given, analyze all sessions and show a full breakdown.
 
@@ -27,12 +32,15 @@ If no arguments are given, analyze all sessions and show a full breakdown.
 ```
 /cost-analysis
 /cost-analysis --days 30
+/cost-analysis --since 2026-03-01 --until 2026-03-15
 /cost-analysis --project my-project
 /cost-analysis --days 7 --top 5
 /cost-analysis --model opus
 /cost-analysis --mcp
 /cost-analysis --mcp --days 30
 /cost-analysis --mcp --mcp-server glean-hosted
+/cost-analysis --budget 500
+/cost-analysis --save ~/reports/march.md
 ```
 
 ## Pricing
@@ -83,28 +91,42 @@ If the fetch fails, times out, or the page structure is unrecognizable, use the 
 ### 2. Parse Arguments
 
 Parse `$ARGUMENTS` for optional filters:
-- `--days N` → compute cutoff date as today minus N days
+- `--days N` → compute cutoff date as today minus N days; equivalent to `--since (today - N days)`
+- `--since YYYY-MM-DD` → lower bound on session date (inclusive); pass directly to the Python script
+- `--until YYYY-MM-DD` → upper bound on session date (inclusive); pass directly to the Python script
 - `--project name` → case-insensitive substring match against `cwd` or `project_path`
 - `--model name` → match any model ID containing the substring (e.g., `opus` matches `claude-opus-4-6`)
 - `--top N` → limit session table to N rows (still compute full totals)
 - `--mcp` → enable MCP-focused analysis sections
 - `--mcp-server name` → filter MCP analysis to a specific server name (implies `--mcp`)
+- `--max-sessions N` → pass to the Python script as a hard session cap
+- `--save [path]` → path to write the report markdown; default `~/claude-cost-YYYY-MM-DD.md`
+- `--budget N` → monthly spending threshold in dollars; used in Step 5
 
 ### 3. Collect and Aggregate Session Data
 
-Run the Python analysis script at `scripts/analyze.py` using Bash. The script path `scripts/analyze.py` is relative to this skill file's location — resolve it to an absolute path when invoking Bash. If live pricing was fetched in Step 1, pass the rates via the `--pricing-json` CLI argument:
+Run the Python analysis script at `scripts/analyze.py` using Bash. The script path `scripts/analyze.py` is relative to this skill file's location — resolve it to an absolute path when invoking Bash. Pass all applicable CLI flags:
+
+- `--pricing-json` if live pricing was fetched in Step 1
+- `--since` / `--until` if those flags were given (filtering runs inside the script before JSON output, keeping the payload smaller)
+- `--max-sessions` if given
 
 ```bash
-python3 scripts/analyze.py --pricing-json '{"claude-opus-4-6": [5.0, 25.0, 6.25, 0.5], ...}'
+python3 scripts/analyze.py \
+  --pricing-json '{"claude-opus-4-6": [5.0, 25.0, 6.25, 0.5], ...}' \
+  --since 2026-03-01 \
+  --until 2026-03-15
 ```
 
-If live pricing was not available, run without `--pricing-json` to use hardcoded defaults:
+If live pricing was not available, omit `--pricing-json` to use hardcoded defaults.
 
-```bash
-python3 scripts/analyze.py
+The script outputs JSON with two keys: `sessions` (list of session objects) and `mcp_config` (configured MCP servers). If truncation occurred, the root also contains `"truncated": true` and `"truncated_count": N`. Save stdout and parse it. If the script writes to stderr, surface that warning verbatim. If it fails entirely, report the error and stop.
+
+**Session count warning**: After parsing the script output, if `sessions` count > 200 and neither `--days`, `--since`, nor `--until` was specified, surface this warning before the report:
+
 ```
-
-The script outputs JSON with two keys: `sessions` (list of session objects) and `mcp_config` (configured MCP servers). Save stdout and parse it. If the script writes to stderr, surface that warning verbatim. If it fails entirely, report the error and stop.
+⚠ Note: {N} sessions found. Consider adding --days 30 to reduce analysis time and cost.
+```
 
 ### 4. Apply Filters
 
@@ -134,11 +156,28 @@ From the filtered results, compute:
 
 **Grand totals**: total cost, token counts, session count, most expensive session, most active project.
 
+**Cost per hour**: Compute `$/hr = total_cost / (sum(duration_min) / 60)`. Include in the report header alongside total cost. Skip if `sum(duration_min) == 0`.
+
+**Budget pace** (only if `--budget N` was given):
+- If `--days D` was given: `pace = (total_cost / D) * 30`
+- Otherwise: filter sessions to the current calendar month, compute month-to-date total, then extrapolate: `pace = (month_to_date_cost / day_of_month) * 30`
+- Compute status: OVER if pace > budget, UNDER if pace <= budget, with percentage difference.
+
 ### 6. Present Results
 
 Format the report following the templates in `references/output-format.md`. Read it before generating output.
 
 When `--mcp` is set, read `references/mcp-analysis.md` for the MCP-specific report sections.
+
+**Save report** (only if `--save` was given): After displaying the full report, write the complete report text to the specified path using Bash:
+
+```bash
+cat > ~/claude-cost-2026-03-24.md << 'REPORT'
+<full report text here>
+REPORT
+```
+
+Then confirm to the user: `Report saved to ~/claude-cost-2026-03-24.md`. If no path was specified, default to `~/claude-cost-YYYY-MM-DD.md` using today's date.
 
 ### 7. Save Run Summary
 

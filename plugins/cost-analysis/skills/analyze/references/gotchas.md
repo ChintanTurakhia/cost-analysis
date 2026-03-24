@@ -10,7 +10,7 @@ Known failure modes and edge cases. Read this before generating output.
 
 - **Empty or corrupt jsonl lines**: Session files can have blank lines or malformed JSON. The script uses `errors='replace'` and skips bad lines — surface the count as a warning but don't fail.
 
-- **Large session counts (500+)**: The Python script output grows linearly with session count. At 500+ sessions, the JSON payload can exceed 500KB. Always recommend `--days N` to users with large histories.
+- **Large session counts (500+)**: The Python script output grows linearly with session count. At 500+ sessions, the JSON payload can exceed 500KB. Always recommend `--days N` to users with large histories. Use `--max-sessions N` as a hard cap — the script will truncate the oldest sessions and set `truncated: true` in the JSON root. Note that truncation may skew aggregates since it drops older (not random) sessions.
 
 - **Session-meta missing cache tokens**: The `session-meta/*.json` files only have `input_tokens` and `output_tokens` — never use these for cost calculation. Always use the project jsonl files.
 

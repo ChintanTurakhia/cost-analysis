@@ -7,13 +7,17 @@
       "expected_output": "Full cost report with project breakdown, top sessions, model breakdown, daily spend chart, token cost breakdown, model recommendations, and MCP usage summary if applicable.",
       "files": [],
       "expectations": [
-        "Report includes a PROJECT BREAKDOWN section",
-        "Report includes a MODEL BREAKDOWN section",
-        "Report includes a TOKEN COST BREAKDOWN section",
-        "Report includes a DAILY SPEND section",
-        "Report includes a MODEL RECOMMENDATIONS section",
-        "Header shows pricing source (either live or hardcoded fallback)",
-        "Grand total cost is shown in the header"
+        "Report includes a 'PROJECT BREAKDOWN' section header",
+        "PROJECT BREAKDOWN table has columns: Project, Sessions, Cost",
+        "Report includes a 'MODEL BREAKDOWN' section header",
+        "MODEL BREAKDOWN table has a 'Cost' column",
+        "Report includes a 'TOKEN COST BREAKDOWN' section header",
+        "Report includes a 'DAILY SPEND' section header",
+        "Report includes a 'MODEL RECOMMENDATIONS' section header",
+        "Header shows pricing source — either 'platform.claude.com (live)' or 'hardcoded fallback'",
+        "Grand total cost in header is a positive dollar amount (e.g., '$X.XX')",
+        "Header includes 'Sessions:' count as a positive integer",
+        "If no sessions used MCP tools, 'MCP USAGE DETECTED' section is absent"
       ]
     },
     {
@@ -22,9 +26,13 @@
       "expected_output": "Same report as full analysis but filtered to last 7 days. Period in header should reflect a 7-day window.",
       "files": [],
       "expectations": [
-        "Header period spans 7 days or fewer",
-        "Report includes PROJECT BREAKDOWN, MODEL BREAKDOWN, DAILY SPEND sections",
-        "If run history exists, a 'vs last run' comparison line appears in the header"
+        "Header period spans 7 days or fewer (period_end - period_start <= 7 days)",
+        "Header shows exact period start and end dates in YYYY-MM-DD format",
+        "Report includes 'PROJECT BREAKDOWN' section",
+        "Report includes 'MODEL BREAKDOWN' section",
+        "Report includes 'DAILY SPEND' section",
+        "No sessions in the report data have dates older than 7 days from today",
+        "If run history exists with matching filters, a 'vs last run' comparison line appears in the header"
       ]
     },
     {
@@ -33,9 +41,11 @@
       "expected_output": "Report filtered to last 30 days, showing only top 5 most expensive sessions in the TOP SESSIONS table. All other sections (project breakdown, model breakdown, etc.) still show full 30-day aggregates.",
       "files": [],
       "expectations": [
-        "TOP SESSIONS table contains at most 5 rows",
+        "TOP SESSIONS table contains at most 5 data rows (excluding header and separator lines)",
         "Header period spans 30 days or fewer",
-        "PROJECT BREAKDOWN still shows all projects (not top-5 limited)"
+        "PROJECT BREAKDOWN still shows all projects from the 30-day period (not top-5 limited)",
+        "Grand total in header reflects all 30-day sessions, not just the top 5",
+        "MODEL BREAKDOWN reflects all 30-day sessions"
       ]
     },
     {
@@ -44,12 +54,65 @@
       "expected_output": "MCP-focused report. Standard project breakdown and model breakdown are kept, but Top Sessions / Daily Spend / Token Cost Breakdown / Model Recommendations are replaced by MCP sections: Server Configuration, Tool Usage Breakdown, Context Overhead Analysis, MCP Sessions Detail, and Optimization Recommendations.",
       "files": [],
       "expectations": [
-        "Report includes MCP SERVER CONFIGURATION section",
-        "Report includes MCP TOOL USAGE BREAKDOWN section",
-        "Report includes CONTEXT OVERHEAD ANALYSIS section",
-        "Report includes MCP OPTIMIZATION RECOMMENDATIONS section",
-        "Standard MODEL RECOMMENDATIONS section is NOT shown",
-        "Standard DAILY SPEND section is NOT shown"
+        "Report includes 'MCP SERVER CONFIGURATION' section header",
+        "MCP SERVER CONFIGURATION section lists configured servers with their type and usage status",
+        "Report includes 'MCP TOOL USAGE BREAKDOWN' section header",
+        "Report includes 'CONTEXT OVERHEAD ANALYSIS' section header",
+        "Report includes 'MCP OPTIMIZATION RECOMMENDATIONS' section header",
+        "Report does NOT include 'MODEL RECOMMENDATIONS' section",
+        "Report does NOT include 'DAILY SPEND' section",
+        "Report still includes 'PROJECT BREAKDOWN' section"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "/cost-analysis:analyze --since 2026-03-01 --until 2026-03-15",
+      "expected_output": "Report filtered to sessions between March 1 and March 15, 2026. Header shows this exact date range.",
+      "files": [],
+      "expectations": [
+        "Header period start is on or after 2026-03-01",
+        "Header period end is on or before 2026-03-15",
+        "No sessions in the report have dates before 2026-03-01",
+        "No sessions in the report have dates after 2026-03-15",
+        "If zero sessions matched the date range, report states 'No sessions matched the given filters'"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "/cost-analysis:analyze --save ~/test-report.md",
+      "expected_output": "Full cost report displayed in chat, then saved to ~/test-report.md. Claude confirms the save with the file path.",
+      "files": [],
+      "expectations": [
+        "Report is displayed in chat as normal before save confirmation",
+        "Claude confirms save with a message containing the file path (e.g., 'Report saved to ~/test-report.md')",
+        "File ~/test-report.md exists after run and contains the 'PROJECT BREAKDOWN' section",
+        "Saved file contains the full report including header, project breakdown, and model breakdown"
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "/cost-analysis:analyze --budget 500",
+      "expected_output": "Full cost report with an additional budget status line in the header showing monthly pace vs the $500 budget.",
+      "files": [],
+      "expectations": [
+        "Header contains a 'Budget:' line showing the budget amount ($500/month)",
+        "Header contains a 'Pace:' metric showing the computed monthly spending pace",
+        "Header contains a 'Status:' field showing either 'OVER' or 'UNDER' with percentage difference",
+        "All standard sections (PROJECT BREAKDOWN, MODEL BREAKDOWN, etc.) are still present",
+        "Budget status line appears directly in the header block, not as a separate section"
+      ]
+    },
+    {
+      "id": 8,
+      "prompt": "/cost-analysis:analyze",
+      "expected_output": "When 200+ sessions exist and no date filter is given, a warning appears before the report suggesting --days to reduce scope. Standard report sections follow.",
+      "files": [],
+      "expectations": [
+        "If session count exceeds 200 and no --days/--since/--until flag was used, a warning message appears before the report body",
+        "Warning mentions the session count and suggests using '--days 30' or similar",
+        "Standard 'PROJECT BREAKDOWN' section still appears after the warning",
+        "Standard 'MODEL BREAKDOWN' section still appears",
+        "Warning does not prevent the report from being generated"
       ]
     }
   ]

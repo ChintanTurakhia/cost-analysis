@@ -32,6 +32,14 @@ Step 3: Restart Claude Code.
 
 Then run `/cost-analysis:analyze` in any session.
 
+## Updating
+
+Run the install command again, then restart Claude Code:
+
+```
+/plugin install cost-analysis@cost-analysis
+```
+
 ## Usage
 
 Basic cost analysis:
@@ -40,9 +48,13 @@ Basic cost analysis:
 /cost-analysis:analyze                                   # all sessions, full breakdown
 /cost-analysis:analyze --days 7                          # last 7 days only
 /cost-analysis:analyze --days 30                         # last 30 days
+/cost-analysis:analyze --since 2026-03-01                # from a specific date
+/cost-analysis:analyze --since 2026-03-01 --until 2026-03-15  # explicit date range
 /cost-analysis:analyze --project my-project              # filter to one project
 /cost-analysis:analyze --days 7 --top 5                  # last week, top 5 sessions
 /cost-analysis:analyze --model opus                      # only Opus sessions
+/cost-analysis:analyze --budget 500                      # show pace vs $500/month budget
+/cost-analysis:analyze --save ~/reports/march.md         # save report to file
 ```
 
 MCP overhead analysis:
@@ -58,11 +70,16 @@ MCP overhead analysis:
 | Flag                | Description                                                | Default      |
 | ------------------- | ---------------------------------------------------------- | ------------ |
 | `--days N`          | Only include sessions from the last N days                 | all time     |
+| `--since YYYY-MM-DD`| Include only sessions on or after this date                | —            |
+| `--until YYYY-MM-DD`| Include only sessions on or before this date               | —            |
 | `--project name`    | Filter to sessions matching this project name              | all projects |
 | `--model name`      | Filter to sessions that used this model                    | all models   |
 | `--top N`           | Show only the top N most expensive sessions                | 10           |
 | `--mcp`             | Show MCP server overhead analysis                          | off          |
 | `--mcp-server name` | Filter MCP analysis to a specific server (implies `--mcp`) | all servers  |
+| `--max-sessions N`  | Hard cap on session count (keeps most recent)              | unlimited    |
+| `--save [path]`     | Write the full report to a markdown file                   | not saved    |
+| `--budget N`        | Set a monthly spending threshold for pace tracking         | —            |
 
 ## MCP analysis
 
