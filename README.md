@@ -23,6 +23,17 @@ claude plugin marketplace add https://github.com/ChintanTurakhia/cost-analysis.g
 claude plugin install cost-analysis@cost-analysis
 ```
 
+Then launch Claude.
+
+OR
+
+Run these two commands in inside Claude:
+
+```bash
+/plugin marketplace add https://github.com/ChintanTurakhia/cost-analysis.git
+/plugin install cost-analysis@cost-analysis
+```
+
 Then **restart Claude Code** (quit and reopen — `/reload-plugins` is not sufficient).
 
 To update later:
@@ -30,17 +41,6 @@ To update later:
 ```bash
 claude plugin update cost-analysis@cost-analysis
 ```
-
-### Alternative: manual install
-
-If the marketplace commands don't work in your environment:
-
-```bash
-curl -fsSL https://github.com/ChintanTurakhia/cost-analysis/archive/refs/heads/main.tar.gz | tar xz -C /tmp/
-cp -r /tmp/cost-analysis-main/plugins/cost-analysis ~/.claude/plugins/cost-analysis
-```
-
-To update, re-run the commands above. Note: `claude plugin update` won't work with the manual method.
 
 ### Verify installation
 
@@ -51,19 +51,6 @@ After restarting Claude Code, run:
 ```
 
 If you see a cost report (even with zero sessions), the plugin is working.
-
-### Uninstall
-
-Marketplace install:
-```bash
-claude plugin uninstall cost-analysis@cost-analysis
-claude plugin marketplace remove cost-analysis
-```
-
-Manual install:
-```bash
-rm -rf ~/.claude/plugins/cost-analysis
-```
 
 ## Usage
 
@@ -92,19 +79,21 @@ MCP overhead analysis:
 
 ## Flags
 
-| Flag                | Description                                                | Default      |
-| ------------------- | ---------------------------------------------------------- | ------------ |
-| `--days N`          | Only include sessions from the last N days                 | all time     |
-| `--since YYYY-MM-DD`| Include only sessions on or after this date                | —            |
-| `--until YYYY-MM-DD`| Include only sessions on or before this date               | —            |
-| `--project name`    | Filter to sessions matching this project name              | all projects |
-| `--model name`      | Filter to sessions that used this model                    | all models   |
-| `--top N`           | Show only the top N most expensive sessions                | 10           |
-| `--mcp`             | Show MCP server overhead analysis                          | off          |
-| `--mcp-server name` | Filter MCP analysis to a specific server (implies `--mcp`) | all servers  |
-| `--max-sessions N`  | Hard cap on session count (keeps most recent)              | unlimited    |
-| `--save [path]`     | Write the full report to a markdown file                   | not saved    |
-| `--budget N`        | Set a monthly spending threshold for pace tracking         | —            |
+
+| Flag                 | Description                                                | Default      |
+| -------------------- | ---------------------------------------------------------- | ------------ |
+| `--days N`           | Only include sessions from the last N days                 | all time     |
+| `--since YYYY-MM-DD` | Include only sessions on or after this date                | —            |
+| `--until YYYY-MM-DD` | Include only sessions on or before this date               | —            |
+| `--project name`     | Filter to sessions matching this project name              | all projects |
+| `--model name`       | Filter to sessions that used this model                    | all models   |
+| `--top N`            | Show only the top N most expensive sessions                | 10           |
+| `--mcp`              | Show MCP server overhead analysis                          | off          |
+| `--mcp-server name`  | Filter MCP analysis to a specific server (implies `--mcp`) | all servers  |
+| `--max-sessions N`   | Hard cap on session count (keeps most recent)              | unlimited    |
+| `--save [path]`      | Write the full report to a markdown file                   | not saved    |
+| `--budget N`         | Set a monthly spending threshold for pace tracking         | —            |
+
 
 ## MCP analysis
 
@@ -285,11 +274,13 @@ MCP OPTIMIZATION RECOMMENDATIONS
 
 Running `/cost-analysis:analyze` itself consumes tokens. Switch to Sonnet first (`/model sonnet`) — the analysis doesn't require Opus-level reasoning.
 
+
 | Model  | Estimated Cost Per Run |
 | ------ | ---------------------- |
 | Opus   | $0.50 – $1.50          |
 | Sonnet | $0.25 – $0.60          |
 | Haiku  | $0.08 – $0.20          |
+
 
 Cost scales with session count — more sessions means a larger JSON payload for Claude to process. See [COST-OF-RUNNING.md](COST-OF-RUNNING.md) for a full breakdown of what drives the cost.
 
@@ -303,3 +294,4 @@ Cost scales with session count — more sessions means a larger JSON payload for
 
 - **Claude Code only.** Cursor and OpenCode don't store per-session token usage or cost data locally — their billing is server-side. Without local token counts, there's nothing to analyze. If either tool starts writing session-level usage data to disk, support could be added.
 - **30-day data retention.** Claude Code only keeps session data in `~/.claude/projects/` for approximately 30 days. Analysis beyond that window will show incomplete data.
+
