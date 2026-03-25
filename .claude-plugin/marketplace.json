@@ -10,11 +10,7 @@
   "plugins": [
     {
       "name": "cost-analysis",
-      "source": {
-        "source": "github",
-        "repo": "ChintanTurakhia/cost-analysis",
-        "path": "plugins/cost-analysis"
-      },
+      "source": "./plugins/cost-analysis",
       "description": "Analyze Claude Code token usage and costs from local session data. Breaks down spend by project, model, and day. Includes model recommendations showing which sessions didn't need Opus. Analyzes MCP server overhead, tool result sizes, and context bloat."
     }
   ]
