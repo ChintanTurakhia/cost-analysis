@@ -19,7 +19,8 @@ Analyze your Claude Code token usage and costs from local session data. See exac
 Run this in your terminal, then restart Claude Code:
 
 ```
-claude plugin marketplace add ChintanTurakhia/cost-analysis; claude plugin install cost-analysis@cost-analysis
+claude plugin marketplace add ChintanTurakhia/cost-analysis; \
+claude plugin install cost-analysis@cost-analysis
 ```
 
 > **Note**: `/reload-plugins` refreshes the command registry but doesn't fully reload skill files. A full restart is required for the plugin to work correctly.
