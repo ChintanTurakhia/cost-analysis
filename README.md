@@ -23,18 +23,14 @@ Paste this into Claude Code:
 ```
 I'd like you to install the cost-analysis plugin for Claude Code. It analyzes token usage and costs from local session data.
 
-Clone it over HTTPS and install it:
-  git clone https://github.com/ChintanTurakhia/cost-analysis.git /tmp/cost-analysis
-  plugin install /tmp/cost-analysis/plugins/cost-analysis
+Run:
+  curl -fsSL https://github.com/ChintanTurakhia/cost-analysis/archive/refs/heads/main.tar.gz | tar xz -C /tmp/
+  cp -r /tmp/cost-analysis-main/plugins/cost-analysis ~/.claude/plugins/cost-analysis
 
 Once done, let me know I need to restart Claude Code for the plugin to take effect.
 ```
 
-To update later, re-run the prompt above or run in your terminal:
-
-```
-git -C /tmp/cost-analysis pull && claude plugin install /tmp/cost-analysis/plugins/cost-analysis
-```
+To update later, re-run the prompt above — it overwrites in place.
 
 ### Marketplace install (supports `claude plugin update`, requires SSH or gh auth)
 
