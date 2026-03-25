@@ -16,38 +16,54 @@ Analyze your Claude Code token usage and costs from local session data. See exac
 
 ## Installation
 
-### Simple install (no SSH or GitHub auth required)
+Run these two commands in your terminal:
 
-Paste this into Claude Code:
-
-```
-I'd like you to install the cost-analysis plugin for Claude Code. It analyzes token usage and costs from local session data.
-
-Run:
-  curl -fsSL https://github.com/ChintanTurakhia/cost-analysis/archive/refs/heads/main.tar.gz | tar xz -C /tmp/
-  cp -r /tmp/cost-analysis-main/plugins/cost-analysis ~/.claude/plugins/cost-analysis
-
-Once done, let me know I need to restart Claude Code for the plugin to take effect.
-```
-
-To update later, re-run the prompt above — it overwrites in place.
-
-### Marketplace install (supports `claude plugin update`, requires SSH or gh auth)
-
-```
-claude plugin marketplace add ChintanTurakhia/cost-analysis && \
+```bash
+claude plugin marketplace add https://github.com/ChintanTurakhia/cost-analysis.git
 claude plugin install cost-analysis@cost-analysis
 ```
 
-To update:
+Then **restart Claude Code** (quit and reopen — `/reload-plugins` is not sufficient).
+
+To update later:
+
+```bash
+claude plugin update cost-analysis@cost-analysis
+```
+
+### Alternative: manual install
+
+If the marketplace commands don't work in your environment:
+
+```bash
+curl -fsSL https://github.com/ChintanTurakhia/cost-analysis/archive/refs/heads/main.tar.gz | tar xz -C /tmp/
+cp -r /tmp/cost-analysis-main/plugins/cost-analysis ~/.claude/plugins/cost-analysis
+```
+
+To update, re-run the commands above. Note: `claude plugin update` won't work with the manual method.
+
+### Verify installation
+
+After restarting Claude Code, run:
 
 ```
-claude plugin update cost-analysis
+/cost-analysis:analyze --days 1
 ```
 
-> **Note**: `/reload-plugins` refreshes the command registry but doesn't fully reload skill files. A full restart is required for the plugin to work correctly.
+If you see a cost report (even with zero sessions), the plugin is working.
 
-After installing and restarting, run `/cost-analysis:analyze` in any session.
+### Uninstall
+
+Marketplace install:
+```bash
+claude plugin uninstall cost-analysis@cost-analysis
+claude plugin marketplace remove cost-analysis
+```
+
+Manual install:
+```bash
+rm -rf ~/.claude/plugins/cost-analysis
+```
 
 ## Usage
 
