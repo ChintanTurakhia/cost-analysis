@@ -19,11 +19,12 @@ Analyze your Claude Code token usage and costs from local session data. See exac
 ### Easiest: paste this into Claude Code
 
 ```
-I'd like you to install the cost-analysis plugin for Claude Code. It analyzes your token usage and costs from local session data.
+I'd like you to install the cost-analysis plugin for Claude Code. It analyzes token usage and costs from local session data.
 
-Run these two commands in order:
-  claude plugin marketplace add ChintanTurakhia/cost-analysis
-  claude plugin install cost-analysis@cost-analysis
+Use curl to download and install it (do not use git or SSH):
+  curl -fsSL "https://github.com/ChintanTurakhia/cost-analysis/archive/refs/heads/main.tar.gz" -o /tmp/cost-analysis.tar.gz
+  tar -xzf /tmp/cost-analysis.tar.gz -C /tmp/
+  claude plugin install /tmp/cost-analysis-main/plugins/cost-analysis
 
 Once done, let me know I need to restart Claude Code for the plugin to take effect.
 ```
@@ -31,8 +32,7 @@ Once done, let me know I need to restart Claude Code for the plugin to take effe
 ### From your terminal
 
 ```
-claude plugin marketplace add ChintanTurakhia/cost-analysis; \
-claude plugin install cost-analysis@cost-analysis
+curl -fsSL "https://github.com/ChintanTurakhia/cost-analysis/archive/refs/heads/main.tar.gz" | tar xz -C /tmp && claude plugin install /tmp/cost-analysis-main/plugins/cost-analysis
 ```
 
 Then restart Claude Code.
