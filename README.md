@@ -16,7 +16,9 @@ Analyze your Claude Code token usage and costs from local session data. See exac
 
 ## Installation
 
-### Easiest: paste this into Claude Code
+### Simple install (no SSH or GitHub auth required)
+
+Paste this into Claude Code:
 
 ```
 I'd like you to install the cost-analysis plugin for Claude Code. It analyzes token usage and costs from local session data.
@@ -28,28 +30,28 @@ Clone it over HTTPS and install it:
 Once done, let me know I need to restart Claude Code for the plugin to take effect.
 ```
 
-### From your terminal
-
-```
-git clone https://github.com/ChintanTurakhia/cost-analysis.git /tmp/cost-analysis && \
-claude plugin install /tmp/cost-analysis/plugins/cost-analysis
-```
-
-Then restart Claude Code.
-
-> **Note**: `/reload-plugins` refreshes the command registry but doesn't fully reload skill files. A full restart is required for the plugin to work correctly.
-
-After restarting, run `/cost-analysis:analyze` in any session.
-
-## Updating
-
-Re-run the install prompt above — it clones fresh each time.
-
-Or from your terminal:
+To update later, re-run the prompt above or run in your terminal:
 
 ```
 git -C /tmp/cost-analysis pull && claude plugin install /tmp/cost-analysis/plugins/cost-analysis
 ```
+
+### Marketplace install (supports `claude plugin update`, requires SSH or gh auth)
+
+```
+claude plugin marketplace add ChintanTurakhia/cost-analysis && \
+claude plugin install cost-analysis@cost-analysis
+```
+
+To update:
+
+```
+claude plugin update cost-analysis
+```
+
+> **Note**: `/reload-plugins` refreshes the command registry but doesn't fully reload skill files. A full restart is required for the plugin to work correctly.
+
+After installing and restarting, run `/cost-analysis:analyze` in any session.
 
 ## Usage
 
