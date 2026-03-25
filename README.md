@@ -149,6 +149,28 @@ TOKEN COST BREAKDOWN
   ──────────────────────────────────────────────────
   TOTAL:                           →  $718.38
 
+CACHE EFFICIENCY
+===================================================
+Overall reuse ratio: 6.2x  (cache reads / cache writes — higher is better)
+Cold sessions (writes with zero reads): 3 of 36 (8%)
+Estimated savings vs no-cache: $312.40
+
+By project:
+  Project              Reuse    Cold     Cache Write Cost   Savings
+  -------------------------------------------------------------------
+  agent-control         11.4x   0 / 12       $98.20         $89.10  ✓
+  web-dashboard          3.1x   2 / 18      $187.40         $91.20  ← marginal
+  docs-site              0.3x   1 /  6       $52.80          $8.20  ← low reuse
+
+RECOMMENDATIONS
+  docs-site (reuse 0.3x): Cache writes weren't recouped — sessions were short
+  one-off tasks that never resumed the same context. Consolidate related work
+  into a single longer session so the cache warms up and pays for itself.
+
+  web-dashboard (reuse 3.1x): Moderate reuse, but 2 cold sessions wasted
+  ~$18 in cache writes. Avoid starting fresh sessions for follow-up edits on
+  the same codebase.
+
 MODEL RECOMMENDATIONS
 ═══════════════════════════════════════════════════════════════════
 
@@ -159,7 +181,15 @@ MODEL RECOMMENDATIONS
   web-dashboard   $312.45  Updating HTML, pushing branches, CSS changes   → saves ~$281
   docs-site       $118.90  Writing markdown, basic git operations          → saves ~$107
 
-  💰 ESTIMATED SAVINGS IF SONNET USED: $388.00 (54% of total spend)
+  💡 DIDN'T NEED SONNET — Haiku would save ~67%
+  quick-checks     $14.20  Single-file lookups, short Q&A, "what does X return"  → saves ~$10
+  git-ops           $8.30  Commit messages, branch creation, "push this"         → saves ~$6
+
+  💰 ESTIMATED SAVINGS: $388 (Opus→Sonnet) + $16 (Sonnet→Haiku) = $404 total (56% of spend)
+
+  TIP: Set Sonnet as your default and use /model opus only when starting a
+  complex multi-file implementation. For quick lookups and git operations,
+  /model haiku cuts costs by another 67%.
 
 MCP USAGE DETECTED
 ══════════════════
