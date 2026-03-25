@@ -16,23 +16,30 @@ Analyze your Claude Code token usage and costs from local session data. See exac
 
 ## Installation
 
-Run this in your terminal, then restart Claude Code:
+### Easiest: paste this into Claude Code
+
+```
+I'd like you to install the cost-analysis plugin for Claude Code. It analyzes your token usage and costs from local session data.
+
+Run these two commands in order:
+  claude plugin marketplace add ChintanTurakhia/cost-analysis
+  claude plugin install cost-analysis@cost-analysis
+
+Once done, let me know I need to restart Claude Code for the plugin to take effect.
+```
+
+### From your terminal
 
 ```
 claude plugin marketplace add ChintanTurakhia/cost-analysis; \
 claude plugin install cost-analysis@cost-analysis
 ```
 
+Then restart Claude Code.
+
 > **Note**: `/reload-plugins` refreshes the command registry but doesn't fully reload skill files. A full restart is required for the plugin to work correctly.
 
-Then run `/cost-analysis:analyze` in any session.
-
-### Alternative (inside Claude)
-
-```
-/plugin marketplace add ChintanTurakhia/cost-analysis
-/plugin install cost-analysis@cost-analysis
-```
+After restarting, run `/cost-analysis:analyze` in any session.
 
 ## Updating
 
