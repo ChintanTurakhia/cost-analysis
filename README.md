@@ -21,9 +21,9 @@ Analyze your Claude Code token usage and costs from local session data. See exac
 ```
 I'd like you to install the cost-analysis plugin for Claude Code. It analyzes token usage and costs from local session data.
 
-Run these in order:
-  plugin marketplace add https://github.com/ChintanTurakhia/cost-analysis
-  plugin install cost-analysis@cost-analysis
+Clone it over HTTPS and install it:
+  git clone https://github.com/ChintanTurakhia/cost-analysis.git /tmp/cost-analysis
+  plugin install /tmp/cost-analysis/plugins/cost-analysis
 
 Once done, let me know I need to restart Claude Code for the plugin to take effect.
 ```
@@ -31,8 +31,8 @@ Once done, let me know I need to restart Claude Code for the plugin to take effe
 ### From your terminal
 
 ```
-claude plugin marketplace add https://github.com/ChintanTurakhia/cost-analysis && \
-claude plugin install cost-analysis@cost-analysis
+git clone https://github.com/ChintanTurakhia/cost-analysis.git /tmp/cost-analysis && \
+claude plugin install /tmp/cost-analysis/plugins/cost-analysis
 ```
 
 Then restart Claude Code.
@@ -43,11 +43,13 @@ After restarting, run `/cost-analysis:analyze` in any session.
 
 ## Updating
 
-```
-claude plugin update cost-analysis
-```
+Re-run the install prompt above — it clones fresh each time.
 
-Then restart Claude Code.
+Or from your terminal:
+
+```
+git -C /tmp/cost-analysis pull && claude plugin install /tmp/cost-analysis/plugins/cost-analysis
+```
 
 ## Usage
 
