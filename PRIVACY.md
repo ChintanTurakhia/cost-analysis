@@ -18,12 +18,11 @@ All data remains on your machine. No data is sent to any external server.
 
 ## External Requests
 
-The plugin makes read-only HTTP requests to public pricing websites to fetch current model pricing:
+The plugin makes a read-only HTTP request to Anthropic's public pricing page to fetch current model pricing:
 
-- `https://llmpricecheck.com/` — LLM pricing reference
-- `https://sanand0.github.io/llmpricing/` — LLM pricing reference
+- `https://platform.claude.com/docs/en/about-claude/pricing` — Anthropic's official model pricing page
 
-No user data is included in these requests.
+No user data is included in this request.
 
 ## Contact
 
