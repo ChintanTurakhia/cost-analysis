@@ -129,6 +129,63 @@
         "If all cache_write_tokens are zero across all sessions, CACHE EFFICIENCY section is omitted entirely",
         "If cache reuse is healthy across all projects, section ends with 'Cache reuse looks healthy across all projects' instead of RECOMMENDATIONS block"
       ]
+    },
+    {
+      "id": 10,
+      "prompt": "/cost-analysis:analyze --days 30",
+      "expected_output": "Full report including a COST SAVINGS OPPORTUNITIES section with personalized, data-driven recommendations based on session patterns. Shows TOP 3 ACTIONS summary followed by detailed recommendations.",
+      "files": [],
+      "expectations": [
+        "Report includes a 'COST SAVINGS OPPORTUNITIES' section header",
+        "Section includes a 'TOP 3 ACTIONS' summary with numbered actionable items",
+        "Each action in TOP 3 includes an estimated savings amount",
+        "At least one detailed recommendation block appears below TOP 3 ACTIONS",
+        "Recommendations reference actual data from the user's sessions (project names, costs, turn counts) — not placeholder values",
+        "Recommendations include 'ACTION:' blocks with specific behavioral changes",
+        "If no recommendations trigger (all thresholds unmet), the COST SAVINGS OPPORTUNITIES section is omitted entirely",
+        "At most 8 individual recommendation blocks are shown"
+      ]
+    },
+    {
+      "id": 11,
+      "prompt": "/cost-analysis:analyze --days 7",
+      "expected_output": "Report that includes context growth analysis, showing sessions where costs accelerated as context grew, and session fragmentation detection showing same-project same-day cold starts.",
+      "files": [],
+      "expectations": [
+        "If sessions exist where cost_second_half > 2.5 * cost_first_half, a 'CONTEXT GROWTH' recommendation appears in COST SAVINGS OPPORTUNITIES",
+        "If same-project same-day session groups with 3+ short sessions exist, a 'SESSION FRAGMENTATION' recommendation appears",
+        "Context growth recommendation mentions specific sessions and their cost escalation",
+        "Session fragmentation recommendation mentions specific projects and dates",
+        "Both recommendations include estimated savings amounts",
+        "Both recommendations include actionable advice mentioning /clear or /compact"
+      ]
+    },
+    {
+      "id": 12,
+      "prompt": "/cost-analysis:analyze --days 30",
+      "expected_output": "Report includes prompting efficiency and tool usage recommendations when patterns are detected — conversation tennis, repeated file reads, large tool outputs.",
+      "files": [],
+      "expectations": [
+        "If sessions with user_text_turns > 8 AND total_cost > $5 exist, a prompting efficiency recommendation appears",
+        "If sessions with duplicate_reads > 0 exist, a repeated file reads recommendation appears",
+        "If sessions with large_tool_results exist, a large tool outputs recommendation appears",
+        "Prompting efficiency recommendation includes advice about writing detailed first prompts",
+        "Repeated file reads recommendation mentions specific files and read counts",
+        "Large tool outputs recommendation includes advice about piping through head/tail"
+      ]
+    },
+    {
+      "id": 13,
+      "prompt": "/cost-analysis:analyze",
+      "expected_output": "Report includes session management commands education section (about /clear, /compact, /model, /cost) whenever the user hasn't been using /compact.",
+      "files": [],
+      "expectations": [
+        "Report includes session management commands information mentioning /clear, /compact, /model, and /cost",
+        "The /compact recommendation includes an estimated monthly savings amount",
+        "If idle gaps > 5 minutes are detected, an idle gap cache expiry recommendation appears",
+        "Idle gap recommendation explains that cache expires after 5 minutes of inactivity",
+        "Cost concentration (Pareto) analysis appears if there are 10+ sessions, showing what percentage of cost comes from top 10% of sessions"
+      ]
     }
   ]
 }

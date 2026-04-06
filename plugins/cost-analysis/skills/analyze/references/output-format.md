@@ -135,6 +135,37 @@ RECOMMENDATIONS
 - Savings estimate uses per-model rates. For sessions with mixed models, use the model that generated the most cache write tokens.
 - A reuse ratio > 5x is healthy. 1–5x is marginal. < 1x means most writes were wasted.
 
+## Cost Savings Opportunities
+
+Personalized, data-driven recommendations for reducing Claude Code costs. This section uses new session-level fields computed by the Python script to detect inefficient patterns and estimate potential savings.
+
+**Required data:** All session-level fields including `cost_first_half`, `cost_second_half`, `context_growth_ratio`, `user_text_turns`, `inter_turn_gaps`, `read_file_counts`, `duplicate_reads`, `large_tool_results`, `avg_turn_cost`, `max_turn_cost`.
+
+**Before generating this section**, read `references/recommendations.md` for the full list of 14 recommendation categories, their trigger conditions, savings formulas, and output templates.
+
+**Rules:**
+- Evaluate all 14 categories against the session data
+- Only show recommendations that trigger (meet their threshold conditions)
+- Sort by estimated savings descending
+- Show at most 8 recommendations
+- Skip recommendations with < $1 estimated savings
+- Always start with TOP 3 ACTIONS summary
+- Use real data from the user's sessions (project names, costs, prompts) — never use placeholder values
+- If no recommendations trigger, skip this section entirely
+
+```
+COST SAVINGS OPPORTUNITIES
+================================================================
+Estimated total savings: $XX.XX/month (based on your usage patterns)
+
+TOP 3 ACTIONS
+1. [Highest savings action] — saves ~$XX
+2. [Second highest] — saves ~$XX
+3. [Third highest] — saves ~$XX
+
+[Individual recommendation blocks from recommendations.md, sorted by savings]
+```
+
 ## Trends and Observations
 
 3-5 brief observations based on the data. Examples:

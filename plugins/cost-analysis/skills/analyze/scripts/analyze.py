@@ -13,6 +13,7 @@ Usage:
 """
 import json, os, glob, sys, argparse
 from collections import defaultdict
+from datetime import datetime
 
 # ---------------------------------------------------------------------------
 # Pricing defaults (overridden at runtime via --pricing-json if available)
@@ -108,6 +109,9 @@ def main():
         'tool_calls': [],
         'tool_results': {},
         'uses_mcp': False,
+        'turn_details': [],
+        'user_text_turns': 0,
+        'read_file_paths': {},
     })
 
     project_root = os.path.expanduser('~/.claude/projects')
@@ -155,6 +159,15 @@ def main():
                             cw = usage.get('cache_creation_input_tokens', 0)
                             if cw > 0 and s['first_cache_write'] is None:
                                 s['first_cache_write'] = cw
+                            # Track per-turn details for context growth analysis
+                            s['turn_details'].append({
+                                'model': model,
+                                'input': usage.get('input_tokens', 0),
+                                'output': usage.get('output_tokens', 0),
+                                'cache_write': usage.get('cache_creation_input_tokens', 0),
+                                'cache_read': usage.get('cache_read_input_tokens', 0),
+                                'timestamp': ts,
+                            })
 
                         # Track tool_use blocks for MCP analysis
                         content = msg.get('content', [])
@@ -170,6 +183,11 @@ def main():
                                     })
                                     if is_mcp:
                                         s['uses_mcp'] = True
+                                    # Track Read tool file paths for duplicate detection
+                                    if tool_name == 'Read':
+                                        fp = block.get('input', {}).get('file_path', '')
+                                        if fp:
+                                            s['read_file_paths'][fp] = s['read_file_paths'].get(fp, 0) + 1
 
                     elif otype == 'user':
                         msg = obj.get('message', {})
@@ -177,6 +195,12 @@ def main():
                             continue
                         sid = obj.get('sessionId', 'unknown')
                         content = msg.get('content', [])
+                        # Track user text turns (not tool results)
+                        if isinstance(content, str) and content.strip():
+                            sessions[sid]['user_text_turns'] += 1
+                        elif isinstance(content, list) and content:
+                            if not all(isinstance(b, dict) and b.get('type') == 'tool_result' for b in content):
+                                sessions[sid]['user_text_turns'] += 1
                         if isinstance(content, list):
                             for block in content:
                                 if isinstance(block, dict) and block.get('type') == 'tool_result':
@@ -243,6 +267,46 @@ def main():
         non_mcp_total_result_size = sum(t['total_result_size'] for t in non_mcp_tools.values())
         non_mcp_total_calls = sum(t['calls'] for t in non_mcp_tools.values())
 
+        # Compute context growth and turn cost analysis
+        td = s['turn_details']
+        turn_costs = [token_cost(t['model'], t['input'], t['output'], t['cache_write'], t['cache_read']) for t in td]
+        mid = len(turn_costs) // 2
+        cost_first_half = round(sum(turn_costs[:mid]), 4) if mid > 0 else 0
+        cost_second_half = round(sum(turn_costs[mid:]), 4) if mid > 0 else round(total_cost, 4)
+        max_turn_cost = round(max(turn_costs), 4) if turn_costs else 0
+        avg_turn_cost = round(sum(turn_costs) / len(turn_costs), 4) if turn_costs else 0
+        first_cw = td[0]['cache_write'] if td else 0
+        last_cw = td[-1]['cache_write'] if td else 0
+        context_growth_ratio = round(last_cw / first_cw, 2) if first_cw > 0 else 0
+
+        # Compute inter-turn gaps > 5 minutes
+        inter_turn_gaps = []
+        for i in range(1, len(td)):
+            try:
+                dt1 = datetime.fromisoformat(td[i-1]['timestamp'].replace('Z', '+00:00'))
+                dt2 = datetime.fromisoformat(td[i]['timestamp'].replace('Z', '+00:00'))
+                gap_s = (dt2 - dt1).total_seconds()
+                if gap_s > 300:
+                    rewrite_cost = token_cost(td[i]['model'], 0, 0, td[i]['cache_write'], 0)
+                    inter_turn_gaps.append({
+                        'gap_seconds': round(gap_s),
+                        'turn_after': i,
+                        'rewrite_tokens': td[i]['cache_write'],
+                        'rewrite_cost': round(rewrite_cost, 4),
+                    })
+            except (ValueError, TypeError):
+                pass
+
+        # Detect large tool results and duplicate reads
+        large_tool_results = []
+        for tc in s['tool_calls']:
+            rs = s['tool_results'].get(tc['id'], 0)
+            if rs > 20000:
+                large_tool_results.append({'tool': tc['name'], 'size': rs})
+
+        read_file_counts = {fp: count for fp, count in s['read_file_paths'].items() if count > 1}
+        duplicate_reads = sum(c - 1 for c in read_file_counts.values())
+
         results.append({
             'session_id': sid,
             'cwd': s['cwd'],
@@ -267,6 +331,16 @@ def main():
             'mcp_total_calls': mcp_total_calls,
             'non_mcp_total_result_size': non_mcp_total_result_size,
             'non_mcp_total_calls': non_mcp_total_calls,
+            'cost_first_half': cost_first_half,
+            'cost_second_half': cost_second_half,
+            'context_growth_ratio': context_growth_ratio,
+            'max_turn_cost': max_turn_cost,
+            'avg_turn_cost': avg_turn_cost,
+            'user_text_turns': s['user_text_turns'],
+            'inter_turn_gaps': inter_turn_gaps,
+            'read_file_counts': read_file_counts,
+            'duplicate_reads': duplicate_reads,
+            'large_tool_results': large_tool_results,
         })
 
     # Read MCP configuration

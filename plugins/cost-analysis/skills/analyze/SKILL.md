@@ -138,6 +138,18 @@ Filter the results list based on parsed arguments:
 
 ### 5. Compute Aggregates
 
+The Python script now outputs additional per-session fields for cost savings analysis:
+- `cost_first_half` / `cost_second_half` — cost split at session midpoint (context bloat detection)
+- `context_growth_ratio` — last turn cache_write / first turn cache_write
+- `max_turn_cost` / `avg_turn_cost` — per-turn cost statistics
+- `user_text_turns` — count of user text messages (not tool results), for prompting efficiency analysis
+- `inter_turn_gaps` — list of idle gaps > 5 minutes with rewrite cost estimates
+- `read_file_counts` — files read 2+ times in a session, with counts
+- `duplicate_reads` — total duplicate file reads
+- `large_tool_results` — tool results exceeding 20K characters
+
+Use these fields when computing the Cost Savings Opportunities section (see `references/recommendations.md`).
+
 Before computing aggregates, resolve the data directory with this fallback: `PLUGIN_DATA="${CLAUDE_PLUGIN_DATA:-$HOME/.claude/cost-analysis-data}"`. Check if `$PLUGIN_DATA/run-history.jsonl` exists. If it does, read the last entry and include a comparison line in the report header:
 
 ```
@@ -173,6 +185,8 @@ From the filtered results, compute:
 ### 6. Present Results
 
 Format the report following the templates in `references/output-format.md`. Read it before generating output.
+
+For the Cost Savings Opportunities section, also read `references/recommendations.md` which contains all 14 recommendation categories with trigger conditions, savings formulas, and output templates. Evaluate each category against the session data and include triggered recommendations sorted by estimated savings.
 
 When `--mcp` is set, read `references/mcp-analysis.md` for the MCP-specific report sections.
 
