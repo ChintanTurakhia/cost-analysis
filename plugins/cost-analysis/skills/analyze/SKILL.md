@@ -1,6 +1,6 @@
 ---
 name: analyze
-description: Analyze Claude Code token usage and costs from local session data. Use when asking about token usage, API costs, spending patterns, Claude budget, how much sessions cost, which projects are most expensive, any breakdown of Claude Code usage by project/date/model, MCP server overhead, MCP tool result sizes, MCP context bloat, or MCP optimization.
+description: Analyze Claude Code token usage and costs from local session data. Provides cost savings recommendations and optimization tips. Use when asking about token usage, API costs, spending patterns, Claude budget, how much sessions cost, which projects are most expensive, any breakdown of Claude Code usage by project/date/model, MCP server overhead, MCP tool result sizes, MCP context bloat, MCP optimization, how to reduce costs, save money on Claude, or optimize token usage.
 user-invocable: true
 tools: Bash, Read, WebFetch
 ---
@@ -147,6 +147,7 @@ The Python script now outputs additional per-session fields for cost savings ana
 - `read_file_counts` — files read 2+ times in a session, with counts
 - `duplicate_reads` — total duplicate file reads
 - `large_tool_results` — tool results exceeding 20K characters
+- `first_cache_write` — first cache_write_tokens value in the session (for static context overhead detection)
 
 Use these fields when computing the Cost Savings Opportunities section (see `references/recommendations.md`).
 

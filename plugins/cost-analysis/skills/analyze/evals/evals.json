@@ -186,6 +186,20 @@
         "Idle gap recommendation explains that cache expires after 5 minutes of inactivity",
         "Cost concentration (Pareto) analysis appears if there are 10+ sessions, showing what percentage of cost comes from top 10% of sessions"
       ]
+    },
+    {
+      "id": 14,
+      "prompt": "/cost-analysis:analyze --days 30",
+      "expected_output": "Report detects static context overhead when sessions consistently start with high first-turn cache writes, recommending ENABLE_TOOL_SEARCH and plugin audit.",
+      "files": [],
+      "expectations": [
+        "If median first_cache_write across 5+ sessions exceeds 30K tokens, a 'STATIC CONTEXT OVERHEAD' recommendation appears",
+        "Recommendation mentions the median first-turn cache write token count with actual data",
+        "Recommendation includes the ENABLE_TOOL_SEARCH setting change with the exact JSON key",
+        "Recommendation advises auditing installed plugins",
+        "Recommendation includes an estimated savings amount based on excess tokens × total turns",
+        "If median first_cache_write is under 30K or fewer than 5 sessions exist, the static context overhead recommendation is omitted"
+      ]
     }
   ]
 }

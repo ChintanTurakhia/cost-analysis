@@ -1,12 +1,12 @@
 {
   "name": "cost-analysis",
-  "description": "Analyze Claude Code token usage and costs from local session data. Breaks down spend by project, model, and day. Includes model recommendations showing which sessions didn't need Opus. Analyzes MCP server overhead, tool result sizes, and context bloat.",
-  "version": "1.2.0",
+  "description": "Analyze Claude Code token usage and costs from local session data. Breaks down spend by project, model, and day. Includes model recommendations showing which sessions didn't need Opus. Analyzes MCP server overhead, tool result sizes, and context bloat. Provides personalized cost savings recommendations with estimated savings.",
+  "version": "1.3.0",
   "author": {
     "name": "Chintan Turakhia",
     "url": "https://github.com/chintanturakhia"
   },
   "homepage": "https://github.com/ChintanTurakhia/cost-analysis",
   "repository": "https://github.com/ChintanTurakhia/cost-analysis",
-  "keywords": ["cost", "tokens", "usage", "billing", "analytics", "budget", "model-recommendations", "claude-code", "mcp", "mcp-servers", "context-overhead", "tool-usage"]
+  "keywords": ["cost", "tokens", "usage", "billing", "analytics", "budget", "model-recommendations", "claude-code", "mcp", "mcp-servers", "context-overhead", "tool-usage", "recommendations", "savings", "optimization"]
 }

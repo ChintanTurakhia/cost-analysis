@@ -579,5 +579,45 @@ class TestLargeToolResults(unittest.TestCase):
             self.assertEqual(len(sess['large_tool_results']), 0)
 
 
+class TestFirstCacheWriteInOutput(unittest.TestCase):
+    """first_cache_write must appear in the output JSON for F1 detection."""
+
+    def test_first_cache_write_present(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            proj = Path(tmp) / '.claude' / 'projects' / 'proj'
+            turn1 = make_assistant_turn(
+                'sess-fcw', '/proj',
+                cache_write_tokens=45000, input_tokens=100, output_tokens=50,
+                timestamp='2026-03-15T10:00:00Z')
+            turn2 = make_assistant_turn(
+                'sess-fcw', '/proj',
+                cache_write_tokens=5000, input_tokens=100, output_tokens=50,
+                timestamp='2026-03-15T10:01:00Z')
+            write_sessions(proj, turn1 + turn2)
+
+            result = run_analyze(fake_home=tmp)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            data = json.loads(result.stdout)
+            sess = {s['session_id']: s for s in data['sessions']}['sess-fcw']
+            self.assertIn('first_cache_write', sess)
+            self.assertEqual(sess['first_cache_write'], 45000)
+
+    def test_first_cache_write_none_when_no_cache(self):
+        """Sessions with zero cache writes should have first_cache_write=None."""
+        with tempfile.TemporaryDirectory() as tmp:
+            proj = Path(tmp) / '.claude' / 'projects' / 'proj'
+            turn = make_assistant_turn(
+                'sess-nocw', '/proj',
+                cache_write_tokens=0, input_tokens=100, output_tokens=50)
+            write_sessions(proj, turn)
+
+            result = run_analyze(fake_home=tmp)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            data = json.loads(result.stdout)
+            sess = {s['session_id']: s for s in data['sessions']}['sess-nocw']
+            self.assertIn('first_cache_write', sess)
+            self.assertIsNone(sess['first_cache_write'])
+
+
 if __name__ == '__main__':
     unittest.main()

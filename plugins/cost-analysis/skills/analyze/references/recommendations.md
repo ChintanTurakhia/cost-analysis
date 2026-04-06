@@ -383,24 +383,62 @@ Detailed first prompts correlate with XX% lower session costs.
 
 ---
 
+### F1. Static Context Overhead
+
+**Priority:** HIGH — one-time fix with compounding returns on every future turn
+
+**Trigger:** Median `first_cache_write` > 30,000 tokens across 5+ sessions
+
+**Data needed:** `first_cache_write` from every session. Compute the median. Also need `total_turns` (sum across all sessions) and the dominant model's `cache_write_rate`.
+
+**Savings formula:** `(median_first_cache_write - 20000) * total_turns * cache_write_rate / 1_000_000`
+
+The 20K baseline is roughly what a lean Claude Code session loads (system prompt + minimal tool definitions). Anything above that is likely tool schema or skill/plugin bloat that gets re-processed on every turn.
+
+**Template:**
+```
+STATIC CONTEXT OVERHEAD
+Your sessions start with a high baseline context before you even type anything:
+- Median first-turn cache write: XX,XXX tokens (healthy baseline: ~20K)
+- Estimated excess: XX,XXX tokens × N total turns = XXM tokens wasted
+- Estimated cost of excess context: $XX.XX
+
+This typically means tool schemas and plugin/skill definitions are being loaded
+into every turn whether you use them or not.
+
+ACTION:
+  1. Enable tool search — add to settings.json:
+     "ENABLE_TOOL_SEARCH": "true"
+     This defers tool schema loading until needed, cutting baseline context
+     from ~45K to ~20K tokens instantly.
+  2. Audit installed plugins — run: claude plugins list
+     Uninstall plugins you rarely use. Each unused plugin adds its skill
+     schemas to every turn.
+
+Estimated savings: ~$XX.XX
+```
+
+---
+
 ## Priority Ordering
 
 When multiple recommendations trigger, sort by estimated savings. If savings are equal, use this priority:
 
 1. E1 (Session Management Commands) — always high value, educational
 2. A1 (Context Bloat)
-3. A2 (Session Fragmentation)
-4. B1 (Conversation Tennis)
-5. D1 (Cost Concentration)
-6. C1 (Repeated File Reads)
-7. A3 (Idle Gap Cache Expiry)
-8. B2 (Output Verbosity)
-9. C2 (Large Tool Outputs)
-10. D2 (Cost-Per-Turn Efficiency)
-11. A4 (Session Length)
-12. C3 (Exploration Storms)
-13. B3 (CLAUDE.md Impact)
-14. E2 (First-Prompt Patterns)
+3. F1 (Static Context Overhead) — one-time fix, compounding returns
+4. A2 (Session Fragmentation)
+5. B1 (Conversation Tennis)
+6. D1 (Cost Concentration)
+7. C1 (Repeated File Reads)
+8. A3 (Idle Gap Cache Expiry)
+9. B2 (Output Verbosity)
+10. C2 (Large Tool Outputs)
+11. D2 (Cost-Per-Turn Efficiency)
+12. A4 (Session Length)
+13. C3 (Exploration Storms)
+14. B3 (CLAUDE.md Impact)
+15. E2 (First-Prompt Patterns)
 
 ## Notes
 
