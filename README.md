@@ -4,15 +4,41 @@ Analyze your Claude Code token usage and costs from local session data. See exac
 
 ## What it does
 
-- **Project breakdown** — cost, tokens, session count per project
+- **Project breakdown** — cost, tokens, session count, $/hr per project
 - **Top sessions** — most expensive sessions with the prompts that triggered them
 - **Model breakdown** — spend per model (Opus vs Sonnet vs Haiku)
 - **Daily spend** — ASCII bar chart of spend over time
 - **Token cost breakdown** — shows how much cache write vs cache read vs output vs input tokens cost (cache write is usually the dominant driver)
+- **Cache efficiency** — reuse ratio, cold session detection, estimated savings vs no-cache, per-project breakdown
+- **Cost savings opportunities** — 14 data-driven recommendation categories that detect inefficient patterns and estimate potential savings (see below)
 - **Model recommendations** — classifies each project's work type and tells you which ones didn't need Opus, with estimated savings
+- **Budget tracking** (`--budget`) — pace vs monthly spending threshold with OVER/UNDER status
 - **MCP analysis** (`--mcp`) — deep dive into MCP server overhead: tool result sizes, schema bloat, cost impact, and optimization recommendations
 - **Run history** — compares current totals to your last run (cost, session count, date) in the report header
 - **Weekly reminder** — surfaces a prompt at session start if it's been 7+ days since your last analysis
+
+### Cost savings categories
+
+The plugin evaluates your session data against 14 recommendation categories, sorted by estimated savings:
+
+| Category | What it detects |
+| --- | --- |
+| **Context Bloat** | Sessions where second-half costs are 2.5x+ higher than first-half |
+| **Session Fragmentation** | Multiple short sessions for the same project on the same day (redundant cold starts) |
+| **Idle Gap Cache Expiry** | Gaps > 5 minutes causing full context re-writes |
+| **Optimal Session Length** | Sessions exceeding 30 turns with diminishing returns |
+| **Conversation Tennis** | High back-and-forth exchanges (8+ user messages) inflating costs |
+| **Output Verbosity** | Sessions where output token cost exceeds 25% of total |
+| **CLAUDE.md Impact** | Cost difference between projects with and without CLAUDE.md files |
+| **Repeated File Reads** | Same files read multiple times within a session |
+| **Large Tool Outputs** | Tool results exceeding 20K characters inflating context |
+| **Exploration Storms** | 10+ consecutive Read/Grep/Glob calls without edits |
+| **Cost Concentration** | Pareto analysis — top 10% of sessions by cost |
+| **Cost-Per-Turn Efficiency** | $/turn spread across projects |
+| **Static Context Overhead** | High baseline context from tool schemas and plugins on every turn |
+| **Session Management Commands** | Recommendations for /clear, /compact, /model, and /cost usage |
+
+Only triggered recommendations appear in the report. Each includes estimated savings and a specific action.
 
 ## Installation
 
