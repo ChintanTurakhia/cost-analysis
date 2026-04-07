@@ -7,6 +7,10 @@
       "expected_output": "Full cost report with project breakdown, top sessions, model breakdown, daily spend chart, token cost breakdown, model recommendations, and MCP usage summary if applicable.",
       "files": [],
       "expectations": [
+        "Report includes an 'EXECUTIVE SUMMARY' section header",
+        "EXECUTIVE SUMMARY includes 'TOP 3 ACTIONS' or 'No significant optimization opportunities'",
+        "Report includes a 'PROJECT SUMMARY' section",
+        "Report includes a 'DETAILED ANALYSIS' separator",
         "Report includes a 'PROJECT BREAKDOWN' section header",
         "PROJECT BREAKDOWN table has columns: Project, Sessions, Cost",
         "Report includes a 'MODEL BREAKDOWN' section header",
@@ -133,16 +137,16 @@
     {
       "id": 10,
       "prompt": "/cost-analysis:analyze --days 30",
-      "expected_output": "Full report including a COST SAVINGS OPPORTUNITIES section with personalized, data-driven recommendations based on session patterns. Shows TOP 3 ACTIONS summary followed by detailed recommendations.",
+      "expected_output": "Full report with Executive Summary showing TOP 3 ACTIONS and a detailed Cost Savings section with personalized, data-driven recommendations based on session patterns.",
       "files": [],
       "expectations": [
-        "Report includes a 'COST SAVINGS OPPORTUNITIES' section header",
-        "Section includes a 'TOP 3 ACTIONS' summary with numbered actionable items",
+        "Executive Summary includes 'TOP 3 ACTIONS' with numbered actionable items",
         "Each action in TOP 3 includes an estimated savings amount",
-        "At least one detailed recommendation block appears below TOP 3 ACTIONS",
+        "Report includes a 'COST SAVINGS' section with detailed recommendation blocks",
+        "At least one detailed recommendation block appears in the Cost Savings section",
         "Recommendations reference actual data from the user's sessions (project names, costs, turn counts) — not placeholder values",
         "Recommendations include 'ACTION:' blocks with specific behavioral changes",
-        "If no recommendations trigger (all thresholds unmet), the COST SAVINGS OPPORTUNITIES section is omitted entirely",
+        "If no recommendations trigger (all thresholds unmet), the Cost Savings section is omitted and Executive Summary shows 'No significant optimization opportunities'",
         "At most 8 individual recommendation blocks are shown"
       ]
     },

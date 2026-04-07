@@ -187,7 +187,7 @@ From the filtered results, compute:
 
 Format the report following the templates in `references/output-format.md`. Read it before generating output.
 
-For the Cost Savings Opportunities section, also read `references/recommendations.md` which contains all 14 recommendation categories with trigger conditions, savings formulas, and output templates. Evaluate each category against the session data and include triggered recommendations sorted by estimated savings.
+For the Executive Summary and Cost Savings — Detailed Recommendations sections, also read `references/recommendations.md` which contains all 14 recommendation categories with trigger conditions, savings formulas, and output templates. Evaluate each category against the session data before rendering any sections, since the Executive Summary requires the results. Include triggered recommendations sorted by estimated savings.
 
 When `--mcp` is set, read `references/mcp-analysis.md` for the MCP-specific report sections.
 
