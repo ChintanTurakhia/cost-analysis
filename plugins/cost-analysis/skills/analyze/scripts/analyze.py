@@ -225,8 +225,8 @@ def main():
                         sessions[sid]['first_ts'] = meta['start_time']
                     if not sessions[sid]['cwd'] or sessions[sid]['cwd'] == 'unknown':
                         sessions[sid]['cwd'] = meta.get('project_path', 'unknown')
-                    sessions[sid]['first_prompt'] = meta.get('first_prompt', '')[:80]
-                    sessions[sid]['duration_minutes'] = meta.get('duration_minutes', 0)
+                    sessions[sid]['first_prompt'] = (meta.get('first_prompt') or '')[:80]
+                    sessions[sid]['duration_minutes'] = meta.get('duration_minutes') or 0
                     # Fallback MCP detection from session-meta
                     if meta.get('uses_mcp') and not sessions[sid]['uses_mcp']:
                         sessions[sid]['uses_mcp'] = True
@@ -313,7 +313,7 @@ def main():
             'project': os.path.basename(s['cwd'].rstrip('/')),
             'date': s['first_ts'][:10] if s['first_ts'] else 'unknown',
             'timestamp': s['first_ts'],
-            'duration_min': s['duration_minutes'],
+            'duration_min': s['duration_minutes'] or 0,
             'first_prompt': s['first_prompt'],
             'models': list(s['models'].keys()),
             'model_costs': model_costs,
@@ -324,7 +324,7 @@ def main():
             'cache_read_tokens': total_cache_read,
             'turns': total_turns,
             'uses_mcp': s['uses_mcp'],
-            'first_cache_write': s['first_cache_write'],
+            'first_cache_write': s['first_cache_write'] if s['first_cache_write'] is not None else 0,
             'mcp_tools': {k: dict(v) for k, v in mcp_tools.items()},
             'non_mcp_tools': {k: dict(v) for k, v in non_mcp_tools.items()},
             'mcp_total_result_size': mcp_total_result_size,

@@ -602,8 +602,8 @@ class TestFirstCacheWriteInOutput(unittest.TestCase):
             self.assertIn('first_cache_write', sess)
             self.assertEqual(sess['first_cache_write'], 45000)
 
-    def test_first_cache_write_none_when_no_cache(self):
-        """Sessions with zero cache writes should have first_cache_write=None."""
+    def test_first_cache_write_zero_when_no_cache(self):
+        """Sessions with zero cache writes should have first_cache_write=0."""
         with tempfile.TemporaryDirectory() as tmp:
             proj = Path(tmp) / '.claude' / 'projects' / 'proj'
             turn = make_assistant_turn(
@@ -616,7 +616,7 @@ class TestFirstCacheWriteInOutput(unittest.TestCase):
             data = json.loads(result.stdout)
             sess = {s['session_id']: s for s in data['sessions']}['sess-nocw']
             self.assertIn('first_cache_write', sess)
-            self.assertIsNone(sess['first_cache_write'])
+            self.assertEqual(sess['first_cache_write'], 0)
 
 
 if __name__ == '__main__':
