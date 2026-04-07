@@ -4,14 +4,14 @@
     "name": "Chintan Turakhia"
   },
   "metadata": {
-    "description": "Token usage and cost analysis for Claude Code sessions",
-    "version": "1.2.0"
+    "description": "Token usage and cost analysis for Claude Code sessions with personalized savings recommendations",
+    "version": "1.3.0"
   },
   "plugins": [
     {
       "name": "cost-analysis",
       "source": "./plugins/cost-analysis",
-      "description": "Analyze Claude Code token usage and costs from local session data. Breaks down spend by project, model, and day. Includes model recommendations showing which sessions didn't need Opus. Analyzes MCP server overhead, tool result sizes, and context bloat."
+      "description": "Analyze Claude Code token usage and costs from local session data. Breaks down spend by project, model, and day. Includes model recommendations showing which sessions didn't need Opus. Analyzes MCP server overhead, tool result sizes, and context bloat. Provides personalized cost savings recommendations with estimated savings."
     }
   ]
 }
