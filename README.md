@@ -1,4 +1,6 @@
-<img src="assets/banner.png" alt="Saving Money on Claude Code" width="50%">
+<p align="center">
+  <img src="assets/banner.png" alt="Saving Money on Claude Code" width="50%">
+</p>
 
 # cost-analysis — Claude Code Plugin
 
