@@ -1,4 +1,4 @@
-![Saving Money on Claude Code](assets/banner.png)
+<img src="assets/banner.png" alt="Saving Money on Claude Code" width="50%">
 
 # cost-analysis — Claude Code Plugin
 
@@ -12,7 +12,7 @@ Analyze your Claude Code token usage and costs from local session data. See exac
 - **Daily spend** — ASCII bar chart of spend over time
 - **Token cost breakdown** — shows how much cache write vs cache read vs output vs input tokens cost (cache write is usually the dominant driver)
 - **Cache efficiency** — reuse ratio, cold session detection, estimated savings vs no-cache, per-project breakdown
-- **Cost savings opportunities** — 14 data-driven recommendation categories that detect inefficient patterns and estimate potential savings (see below)
+- **Cost savings opportunities** — 16 data-driven recommendation categories that detect inefficient patterns and estimate potential savings (see below)
 - **Model recommendations** — classifies each project's work type and tells you which ones didn't need Opus, with estimated savings
 - **Budget tracking** (`--budget`) — pace vs monthly spending threshold with OVER/UNDER status
 - **MCP analysis** (`--mcp`) — deep dive into MCP server overhead: tool result sizes, schema bloat, cost impact, and optimization recommendations
@@ -21,7 +21,7 @@ Analyze your Claude Code token usage and costs from local session data. See exac
 
 ### Cost savings categories
 
-The plugin evaluates your session data against 14 recommendation categories, sorted by estimated savings:
+The plugin evaluates your session data against 16 recommendation categories, sorted by estimated savings:
 
 | Category | What it detects |
 | --- | --- |
@@ -38,6 +38,7 @@ The plugin evaluates your session data against 14 recommendation categories, sor
 | **Cost Concentration** | Pareto analysis — top 10% of sessions by cost |
 | **Cost-Per-Turn Efficiency** | $/turn spread across projects |
 | **Static Context Overhead** | High baseline context from tool schemas and plugins on every turn |
+| **Quadratic Session Growth** | Sessions with 500+ turns where cost grows O(N²) from context accumulation |
 | **Session Management Commands** | Recommendations for /clear, /compact, /model, and /cost usage |
 
 Only triggered recommendations appear in the report. Each includes estimated savings and a specific action.
