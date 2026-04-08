@@ -2,7 +2,7 @@
 
 Report section templates. Each section describes its purpose, required data, and an example. Adapt the format to what the user asked for — if they only asked about a specific project or time range, skip sections that aren't relevant. If they asked a simple question, give a concise answer instead of the full report.
 
-**Important: Compute before rendering.** Evaluate all 14 recommendation categories (from `references/recommendations.md`) and all model classifications before writing any sections. The Executive Summary requires results from both Cost Savings and Model Recommendations analyses, so these must be computed first.
+**Important: Compute before rendering.** Evaluate all 16 recommendation categories (from `references/recommendations.md`) and all model classifications before writing any sections. The Executive Summary requires results from both Cost Savings and Model Recommendations analyses, so these must be computed first.
 
 ## Header
 
@@ -29,7 +29,7 @@ The "Budget:" line is only shown when `--budget N` was given. See Step 5 in SKIL
 
 Surfaces the highest-impact actions and model switching savings in a scannable block. This is the "so what" of the report — users who only read this section should walk away with the key actions.
 
-**Required data:** Results from evaluating all 14 recommendation categories (sorted by estimated savings), and model recommendation analysis (Opus-justified, didn't-need-Opus, didn't-need-Sonnet tiers with estimated savings).
+**Required data:** Results from evaluating all 16 recommendation categories (sorted by estimated savings), and model recommendation analysis (Opus-justified, didn't-need-Opus, didn't-need-Sonnet tiers with estimated savings).
 
 **Rules:**
 - Show the top 3 action items (or fewer if fewer than 3 recommendations trigger)
@@ -211,10 +211,10 @@ Personalized, data-driven recommendations for reducing Claude Code costs. The TO
 
 **Required data:** All session-level fields including `cost_first_half`, `cost_second_half`, `context_growth_ratio`, `user_text_turns`, `inter_turn_gaps`, `read_file_counts`, `duplicate_reads`, `large_tool_results`, `avg_turn_cost`, `max_turn_cost`.
 
-**Before generating this section**, read `references/recommendations.md` for the full list of 14 recommendation categories, their trigger conditions, savings formulas, and output templates.
+**Before generating this section**, read `references/recommendations.md` for the full list of 16 recommendation categories, their trigger conditions, savings formulas, and output templates.
 
 **Rules:**
-- Evaluate all 14 categories against the session data
+- Evaluate all 16 categories against the session data
 - Only show recommendations that trigger (meet their threshold conditions)
 - Sort by estimated savings descending
 - Show at most 8 recommendations

@@ -1,3 +1,5 @@
+![Saving Money on Claude Code](assets/banner.png)
+
 # cost-analysis — Claude Code Plugin
 
 Analyze your Claude Code token usage and costs from local session data. See exactly what you spent, by project, model, and day — including which sessions didn't need Opus and how much MCP servers are costing you.

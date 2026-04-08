@@ -420,25 +420,63 @@ Estimated savings: ~$XX.XX
 
 ---
 
+### G1. Quadratic Session Detection
+
+**Priority:** HIGH
+
+**Trigger:** At least 1 session with `turns > 500` AND `cache_write_tokens > 50_000_000` (50M tokens)
+
+**Data needed:** `turns`, `cache_write_tokens`, `total_cost`, `avg_turn_cost`, `first_prompt` per session
+
+**Savings formula:** For each flagged session: `total_cost * (1 - sqrt(turns) / turns)`. Sum across all flagged sessions.
+
+This estimates the quadratic overhead: in a session with N turns, each turn re-sends all prior context, so total cost scales as O(N²). If the same work were split into sqrt(N) independent sessions of sqrt(N) turns each, total cost would scale as O(N). The formula captures the difference.
+
+**Template:**
+```
+QUADRATIC SESSION GROWTH
+Some sessions have so many turns that costs grow quadratically — each turn
+re-sends all prior context, so total cost scales as O(N²) with turn count:
+- N sessions exceeded 500 turns with 50M+ cache write tokens
+- Worst: "PROMPT..." — NNN turns, $XX.XX total, $X.XX avg/turn
+- Estimated quadratic overhead: $XX.XX (cost beyond linear scaling)
+
+These sessions may contain independent or parallelizable work packed into a
+single conversation. Consider whether subtasks could run as separate sessions
+or subagents — if each page, component, or test is independent, there's no
+reason to carry prior context forward.
+
+ACTION: Break marathon sessions into focused sub-sessions:
+  - If tasks are independent, run them as separate sessions or subagents
+  - If tasks share context, use a coordinator that spawns subagents
+  - Batch related work across sessions rather than accumulating in one
+  - Use /compact periodically to reset the quadratic growth curve
+
+Estimated savings: ~$XX.XX
+```
+
+---
+
 ## Priority Ordering
 
 When multiple recommendations trigger, sort by estimated savings. If savings are equal, use this priority:
 
 1. E1 (Session Management Commands) — always high value, educational
 2. A1 (Context Bloat)
-3. F1 (Static Context Overhead) — one-time fix, compounding returns
-4. A2 (Session Fragmentation)
-5. B1 (Conversation Tennis)
-6. D1 (Cost Concentration)
-7. C1 (Repeated File Reads)
-8. A3 (Idle Gap Cache Expiry)
-9. B2 (Output Verbosity)
-10. C2 (Large Tool Outputs)
-11. D2 (Cost-Per-Turn Efficiency)
-12. A4 (Session Length)
-13. C3 (Exploration Storms)
-14. B3 (CLAUDE.md Impact)
-15. E2 (First-Prompt Patterns)
+3. G1 (Quadratic Session Detection) — architectural fix, highest per-session savings
+4. F1 (Static Context Overhead) — one-time fix, compounding returns
+5. A2 (Session Fragmentation)
+6. B1 (Conversation Tennis)
+7. D1 (Cost Concentration)
+8. C1 (Repeated File Reads)
+9. A3 (Idle Gap Cache Expiry)
+10. B2 (Output Verbosity)
+11. C2 (Large Tool Outputs)
+12. D2 (Cost-Per-Turn Efficiency)
+13. A4 (Session Length)
+14. C3 (Exploration Storms)
+15. B3 (CLAUDE.md Impact)
+16. E2 (First-Prompt Patterns)
 
 ## Notes
 
