@@ -1,0 +1,28 @@
+{
+  "name": "@chintanturakhia/cost-analysis",
+  "version": "1.3.0",
+  "description": "Claude Code plugin for token usage and cost analysis",
+  "bin": {
+    "cost-analysis": "./bin/install.mjs"
+  },
+  "files": [
+    "bin/",
+    "plugins/"
+  ],
+  "keywords": [
+    "claude",
+    "claude-code",
+    "cost",
+    "tokens",
+    "usage",
+    "billing",
+    "analytics",
+    "plugin"
+  ],
+  "author": "Chintan Turakhia",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ChintanTurakhia/cost-analysis.git"
+  }
+}

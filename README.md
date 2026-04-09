@@ -47,31 +47,39 @@ Only triggered recommendations appear in the report. Each includes estimated sav
 
 ## Installation
 
-Run these two commands in your terminal:
+```bash
+npx @chintanturakhia/cost-analysis
+```
+
+Then restart Claude Code. To update:
+
+```bash
+npx @chintanturakhia/cost-analysis@latest
+```
+
+To uninstall:
+
+```bash
+npx @chintanturakhia/cost-analysis --uninstall
+```
+
+<details>
+<summary>Alternative: install via Claude plugin system</summary>
 
 ```bash
 claude plugin marketplace add https://github.com/ChintanTurakhia/cost-analysis.git
 claude plugin install cost-analysis@cost-analysis
 ```
 
-Then launch Claude.
-
-OR
-
-Run these two commands in inside Claude:
+Or inside Claude:
 
 ```bash
 /plugin marketplace add https://github.com/ChintanTurakhia/cost-analysis.git
 /plugin install cost-analysis@cost-analysis
 ```
 
-Then **restart Claude Code** (quit and reopen — `/reload-plugins` is not sufficient).
-
-To update later:
-
-```bash
-claude plugin update cost-analysis@cost-analysis
-```
+Update: `claude plugin update cost-analysis@cost-analysis`
+</details>
 
 ### Verify installation
 

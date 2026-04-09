@@ -1,0 +1,11 @@
+report.html
+.DS_Store
+github-issue.md
+opencodeplan.md
+.claude/
+COST-OF-RUNNING.md
+CHANGELOG.md
+PRIVACY.md
+assets/
+*.md
+!README.md
