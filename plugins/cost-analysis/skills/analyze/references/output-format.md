@@ -1,8 +1,148 @@
-# Output Format
+# Output Format — Data Specification
 
-Report section templates. Each section describes its purpose, required data, and an example. Adapt the format to what the user asked for — if they only asked about a specific project or time range, skip sections that aren't relevant. If they asked a simple question, give a concise answer instead of the full report.
+This document defines the data requirements, rules, and content for each report section. The report is rendered as an HTML dashboard using the data-driven template at `references/report-template.html`. Each section below describes its purpose, required data fields, and conditional display rules.
 
-**Important: Compute before rendering.** Evaluate all 16 recommendation categories (from `references/recommendations.md`) and all model classifications before writing any sections. The Executive Summary requires results from both Cost Savings and Model Recommendations analyses, so these must be computed first.
+**How it works:** Build a `window.REPORT_DATA` JSON object with the schema below, inject it into the HTML template (replacing the `// DATA_INJECTION_POINT` line), and write the result to a file. The template's JavaScript renders all sections from this data.
+
+If the user asked a simple question (not a full analysis), give a concise terminal answer instead of generating the HTML report.
+
+**Important: Compute before rendering.** Evaluate all 16 recommendation categories (from `references/recommendations.md`) and all model classifications before building the JSON. The Executive Summary requires results from both Cost Savings and Model Recommendations analyses.
+
+## REPORT_DATA JSON Schema
+
+```javascript
+window.REPORT_DATA = {
+  header: {
+    pricing_source: "platform.claude.com (live)",  // or "hardcoded fallback"
+    period_start: "YYYY-MM-DD",
+    period_end: "YYYY-MM-DD",
+    sessions: 207,
+    total_cost: 3812.72,
+    cost_per_hour: 6.23,       // null if total duration is 0
+    days_analyzed: 83,          // period_end - period_start
+    project_count: 46,
+    warning: "1 session...",    // null if no warnings
+    vs_last_run: {              // null if no run history or filters don't match
+      prev_date: "YYYY-MM-DD",
+      prev_cost: 502.15,
+      current_cost: 718.38,
+      pct_change: 43
+    },
+    budget: {                   // null if --budget not given
+      limit: 500,
+      pace: 612,
+      status: "OVER",          // "OVER" or "UNDER"
+      pct_diff: 22
+    }
+  },
+
+  executive_summary: {
+    total_savings: 1053,
+    actions: [                  // top 3 recommendations by savings
+      { title: "Use /compact in long sessions", detail: "149 sessions >15 turns", savings: 652 }
+    ],
+    model_note: "~10 projects didn't need Opus (save ~$193)"  // null if no model recs
+  },
+
+  projects: [                   // top 5 by cost
+    { name: "city-builder", sessions: 1, cost: 1773.28 }
+  ],
+  remaining_projects: { count: 41, cost: 795.40 },  // null if <= 5 projects
+
+  models: [                     // all models, sorted by cost desc
+    { name: "claude-opus-4-5-20251101", cost: 1796.24, color: "#4f46e5" }
+  ],
+  model_tiers: {
+    opus_pct: 87, opus_cost: 3318.10,
+    sonnet_pct: 9, sonnet_cost: 348.04,
+    haiku_pct: 4, haiku_cost: 146.58
+  },
+
+  top_sessions: [               // top N by cost (--top flag, default 10)
+    { date: "2026-01-30", project: "city-builder", duration: "2m", cost: 1773.28,
+      prompt: "Automated task", highlight: true }
+  ],
+
+  daily_spend: [                // top 15 days by cost
+    { date: "2026-01-30", cost: 1773.56, sessions: 2 }
+  ],
+
+  token_breakdown: [
+    { type: "Cache Write", tokens: 535356614, cost: 2802.02, pct: 72, color: "#4f46e5" },
+    { type: "Cache Read", tokens: 2204480271, cost: 928.61, pct: 24, color: "#0ea5e9" },
+    { type: "Output", tokens: 5192884, cost: 105.91, pct: 3, color: "#f59e0b" },
+    { type: "Input", tokens: 10603033, cost: 48.69, pct: 1, color: "#10b981" }
+  ],
+  token_total: 3885.22,
+
+  cache_efficiency: {           // null if sum(cache_write_tokens) == 0
+    reuse_ratio: 4.1,
+    cold_sessions: 5,
+    total_cache_sessions: 186,
+    cold_pct: 3,
+    savings_vs_no_cache: 9920.16,
+    projects: [
+      { name: "city-builder", reuse: 3.8, cold: "0/1", cw_cost: 1319.63,
+        savings: 3602.26, status: "healthy" }   // status: "healthy", "warning", "danger"
+    ]
+  },
+
+  recommendations: [            // sorted by savings desc, max 8, skip < $1
+    { title: "Session Management Commands", savings: 652,
+      body_html: "<ul><li><code>/clear</code>: Wipe history</li>...</ul>" }
+  ],
+
+  model_recommendations: {
+    justified: [
+      { project: "city-builder", cost: 1773.28, reason: "Complex generation (21K turns)" }
+    ],
+    didnt_need_opus: [
+      { project: "gist-commenter-react", cost: 71.01, savings: 57 }
+    ],
+    didnt_need_sonnet: [        // null if no Sonnet sessions qualify
+      { project: "ai-native", cost: 5.39, savings: 4 }
+    ],
+    total_savings: 199,
+    total_pct: 5
+  },
+
+  trends: [
+    { text: "<strong>city-builder</strong> is a massive outlier", color: "#ef4444" }
+  ],
+
+  mcp: {                        // null if no MCP sessions
+    mcp_sessions: 40,
+    total_sessions: 207,
+    mcp_avg_cost: 24.35,
+    non_mcp_avg_cost: 17.00,
+    premium_pct: 43,
+    top_tools: [
+      { name: "glean search", calls: 378 }
+    ]
+  }
+};
+```
+
+### Color palette for models
+
+Assign colors from this palette in order:
+- `#4f46e5` (indigo), `#6366f1` (lighter indigo), `#0ea5e9` (sky), `#14b8a6` (teal), `#f59e0b` (amber), `#10b981` (emerald)
+
+### Section visibility rules
+
+Set fields to `null` to hide the corresponding section:
+- `cache_efficiency`: hide if `sum(cache_write_tokens) == 0`
+- `mcp`: hide if no sessions used MCP tools
+- `model_recommendations.didnt_need_sonnet`: hide if no Sonnet sessions qualify
+- `header.vs_last_run`: hide if no run history or previous filters don't match
+- `header.budget`: hide if `--budget` not given
+- `remaining_projects`: hide if 5 or fewer total projects
+
+---
+
+## Section Data Requirements
+
+The sections below describe what data populates each field in the JSON schema above, and the rules for computing it. The visual rendering is handled by the HTML template.
 
 ## Header
 

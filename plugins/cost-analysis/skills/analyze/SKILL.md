@@ -22,7 +22,7 @@ Analyzes Claude Code token usage and cost from local session data stored in `~/.
 - `--mcp` — Focus analysis on MCP (Model Context Protocol) server overhead: tool result sizes, schema bloat, cost impact, and optimization recommendations
 - `--mcp-server <name>` — Filter MCP analysis to a specific server (e.g., `glean-hosted`, `pencil`). Implies `--mcp`
 - `--max-sessions <N>` — Hard cap on session count. If session count after date filtering exceeds N, truncates the oldest sessions. Use with caution — truncation may skew aggregates.
-- `--save [path]` — Write the formatted report to a markdown file. Default path: `~/claude-cost-YYYY-MM-DD.md`.
+- `--save [path]` — Write the HTML report to a file. Default path: `~/claude-cost-YYYY-MM-DD.html`.
 - `--budget <N>` — Set a monthly spending threshold in dollars. Adds a budget status line (pace vs. limit) to the report header.
 
 If no arguments are given, analyze all sessions and show a full breakdown.
@@ -40,7 +40,7 @@ If no arguments are given, analyze all sessions and show a full breakdown.
 /cost-analysis --mcp --days 30
 /cost-analysis --mcp --mcp-server glean-hosted
 /cost-analysis --budget 500
-/cost-analysis --save ~/reports/march.md
+/cost-analysis --save ~/reports/march.html
 ```
 
 ## Pricing
@@ -100,7 +100,7 @@ Parse `$ARGUMENTS` for optional filters:
 - `--mcp` → enable MCP-focused analysis sections
 - `--mcp-server name` → filter MCP analysis to a specific server name (implies `--mcp`)
 - `--max-sessions N` → pass to the Python script as a hard session cap
-- `--save [path]` → path to write the report markdown; default `~/claude-cost-YYYY-MM-DD.md`
+- `--save [path]` → path to write the HTML report; default `~/claude-cost-YYYY-MM-DD.html`
 - `--budget N` → monthly spending threshold in dollars; used in Step 5
 
 ### 3. Collect and Aggregate Session Data
@@ -185,21 +185,52 @@ From the filtered results, compute:
 
 ### 6. Present Results
 
-Format the report following the templates in `references/output-format.md`. Read it before generating output.
+The report is rendered as an interactive HTML dashboard that opens in the browser. Read `references/output-format.md` for the data requirements and rules for each section. Read `references/recommendations.md` for the 16 recommendation categories. When `--mcp` is set, read `references/mcp-analysis.md`.
 
-For the Executive Summary and Cost Savings — Detailed Recommendations sections, also read `references/recommendations.md` which contains all 16 recommendation categories with trigger conditions, savings formulas, and output templates. Evaluate each category against the session data before rendering any sections, since the Executive Summary requires the results. Include triggered recommendations sorted by estimated savings.
+**Step 6a: Compute all data.** Evaluate all 16 recommendation categories and model classifications before building the report data. The Executive Summary requires results from both.
 
-When `--mcp` is set, read `references/mcp-analysis.md` for the MCP-specific report sections.
+**Step 6b: Build the REPORT_DATA JSON object.** Read `references/output-format.md` for the full JSON schema. Construct a `window.REPORT_DATA = {...}` JavaScript object containing all computed data: header, executive summary, projects, models, top sessions, daily spend, token breakdown, cache efficiency, recommendations, model recommendations, trends, and MCP usage. Set fields to `null` when data is unavailable or a section should be hidden.
 
-**Save report** (only if `--save` was given): After displaying the full report, write the complete report text to the specified path using Bash:
+**Step 6c: Generate the HTML file.** Read the template at `references/report-template.html`. This is a data-driven HTML file with a `// DATA_INJECTION_POINT` comment placeholder. Replace that line with the actual `window.REPORT_DATA = {...};` JSON from Step 6b. Write the result to a file and open it:
 
 ```bash
-cat > ~/claude-cost-2026-03-24.md << 'REPORT'
-<full report text here>
-REPORT
+# Determine output path
+REPORT_PATH="${SAVE_PATH:-$(mktemp /tmp/claude-cost-XXXXXX.html)}"
+
+# Read template, inject data, write output
+TEMPLATE_PATH="<absolute path to references/report-template.html>"
+python3 -c "
+import sys
+template = open('$TEMPLATE_PATH').read()
+data_js = '''window.REPORT_DATA = <JSON here>;'''
+print(template.replace('// DATA_INJECTION_POINT', data_js, 1))
+" > "$REPORT_PATH"
+
+# Open in browser
+open "$REPORT_PATH" 2>/dev/null || xdg-open "$REPORT_PATH" 2>/dev/null
 ```
 
-Then confirm to the user: `Report saved to ~/claude-cost-2026-03-24.md`. If no path was specified, default to `~/claude-cost-YYYY-MM-DD.md` using today's date.
+When `--save` was given, use the save path directly instead of a temp file.
+
+**Step 6d: Show brief terminal summary.** Print a condensed 10-15 line summary so the user gets immediate feedback:
+
+```
+Claude Code Cost Analysis
+========================
+Pricing source: platform.claude.com (live)
+Period: 2026-03-11 to 2026-03-18  |  Sessions: 36  |  Total Cost: $718.38  |  $/hr: $24.61
+
+Top 3 Actions:
+1. [recommendation title] — saves ~$XXX
+2. [recommendation title] — saves ~$XXX
+3. [recommendation title] — saves ~$XXX
+
+Estimated total savings: $XXX/month
+
+Full interactive report opened in browser.
+```
+
+If `--save` was used, add: `Report saved to <path>`. No tables, no detailed breakdowns in terminal — just the at-a-glance summary.
 
 ### 7. Save Run Summary
 

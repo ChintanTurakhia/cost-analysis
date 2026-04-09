@@ -1,0 +1,1391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Code Cost Analysis</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --sidebar-w: 240px;
+    --max-content: 920px;
+    --bg: #ffffff;
+    --bg-alt: #f7f8fa;
+    --bg-sidebar: #1a1c23;
+    --bg-sidebar-hover: #2a2d36;
+    --text: #1e1e2e;
+    --text-secondary: #5c5f77;
+    --text-sidebar: #b4b8c8;
+    --text-sidebar-active: #ffffff;
+    --border: #e2e4ea;
+    --accent: #4f6df5;
+    --accent-light: #eef1fe;
+    --green: #22c55e;
+    --green-light: #f0fdf4;
+    --amber: #f59e0b;
+    --amber-light: #fffbeb;
+    --red: #ef4444;
+    --red-light: #fef2f2;
+    --purple: #8b5cf6;
+    --teal: #14b8a6;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.07), 0 1px 3px rgba(0,0,0,0.04);
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg-alt);
+    color: var(--text);
+    line-height: 1.6;
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    position: fixed;
+    top: 0; left: 0;
+    width: var(--sidebar-w);
+    height: 100vh;
+    background: var(--bg-sidebar);
+    padding: 28px 0;
+    overflow-y: auto;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sidebar-brand {
+    padding: 0 24px 24px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    margin-bottom: 16px;
+  }
+
+  .sidebar-brand h1 {
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.3px;
+  }
+
+  .sidebar-brand p {
+    font-size: 11px;
+    color: var(--text-sidebar);
+    margin-top: 4px;
+    opacity: 0.7;
+  }
+
+  .sidebar nav { flex: 1; }
+
+  .sidebar nav a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 24px;
+    color: var(--text-sidebar);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.15s ease;
+    border-left: 3px solid transparent;
+  }
+
+  .sidebar nav a:hover {
+    background: var(--bg-sidebar-hover);
+    color: var(--text-sidebar-active);
+  }
+
+  .sidebar nav a.active {
+    color: var(--text-sidebar-active);
+    background: var(--bg-sidebar-hover);
+    border-left-color: var(--accent);
+  }
+
+  .sidebar nav a .nav-icon {
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    opacity: 0.8;
+  }
+
+  .sidebar-footer {
+    padding: 16px 24px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    font-size: 11px;
+    color: rgba(255,255,255,0.3);
+  }
+
+  /* Main */
+  .main {
+    margin-left: var(--sidebar-w);
+    padding: 40px 48px 80px;
+  }
+
+  .content {
+    max-width: var(--max-content);
+    margin: 0 auto;
+  }
+
+  /* Header */
+  .page-header {
+    margin-bottom: 36px;
+  }
+
+  .page-header h2 {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: 8px;
+  }
+
+  .header-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    font-size: 12.5px;
+    color: var(--text-secondary);
+  }
+
+  .header-meta span { display: flex; align-items: center; gap: 4px; }
+
+  .warning-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    background: var(--amber-light);
+    color: #92400e;
+    border-radius: 20px;
+    font-size: 11.5px;
+    font-weight: 500;
+    margin-top: 10px;
+  }
+
+  /* Stat Cards */
+  .stat-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .stat-card {
+    background: var(--bg);
+    border-radius: var(--radius);
+    padding: 20px 22px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border);
+  }
+
+  .stat-card .label {
+    font-size: 11.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+  }
+
+  .stat-card .value {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: var(--text);
+  }
+
+  .stat-card .value.accent { color: var(--accent); }
+  .stat-card .value.green { color: var(--green); }
+  .stat-card .sub {
+    font-size: 11.5px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+  }
+
+  /* Sections */
+  .section {
+    margin-bottom: 40px;
+    scroll-margin-top: 24px;
+  }
+
+  .section-title {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    margin-bottom: 18px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-title .icon { font-size: 18px; }
+
+  /* Cards */
+  .card {
+    background: var(--bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border);
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+
+  .card-header {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 14px;
+    color: var(--text);
+  }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  table th {
+    text-align: left;
+    padding: 10px 14px;
+    font-weight: 600;
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+    background: var(--bg-alt);
+    border-bottom: 2px solid var(--border);
+  }
+
+  table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+
+  table tr:nth-child(even) td { background: rgba(247,248,250,0.5); }
+  table tr:hover td { background: var(--accent-light); }
+
+  table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  table th.num { text-align: right; }
+
+  .table-footer {
+    padding: 10px 14px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-style: italic;
+    border-top: 1px solid var(--border);
+    background: var(--bg-alt);
+  }
+
+  /* Bar chart */
+  .bar-chart { display: flex; flex-direction: column; gap: 8px; }
+
+  .bar-row {
+    display: grid;
+    grid-template-columns: 90px 1fr 80px 60px;
+    align-items: center;
+    gap: 12px;
+    font-size: 13px;
+  }
+
+  .bar-date {
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-secondary);
+  }
+
+  .bar-track {
+    height: 28px;
+    background: var(--bg-alt);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    background: linear-gradient(90deg, var(--accent), #7c8df9);
+    transition: width 0.6s ease;
+    min-width: 2px;
+  }
+
+  .bar-fill.hot {
+    background: linear-gradient(90deg, var(--red), #f97066);
+  }
+
+  .bar-cost {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+
+  .bar-sessions {
+    font-size: 11.5px;
+    color: var(--text-secondary);
+    text-align: center;
+  }
+
+  /* Token Breakdown Visual */
+  .token-visual {
+    margin-bottom: 20px;
+  }
+
+  .token-bar-container {
+    display: flex;
+    height: 40px;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    margin-bottom: 14px;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .token-segment {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: #fff;
+    transition: flex 0.4s ease;
+    cursor: default;
+    position: relative;
+  }
+
+  .token-segment:hover { filter: brightness(1.1); }
+
+  .token-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-top: 4px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+  }
+
+  .legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+
+  .legend-value {
+    font-weight: 600;
+    margin-left: 2px;
+  }
+
+  .legend-pct {
+    color: var(--text-secondary);
+    font-size: 12px;
+  }
+
+  /* Savings card */
+  .savings-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  .saving-item {
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    padding: 16px 18px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .saving-item::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 4px;
+  }
+
+  .saving-item.high::before { background: var(--red); }
+  .saving-item.med::before { background: var(--amber); }
+  .saving-item.low::before { background: var(--green); }
+
+  .saving-amount {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--green);
+    margin-bottom: 2px;
+  }
+
+  .saving-title {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .saving-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  /* Status badge */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 9px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .badge.healthy { background: var(--green-light); color: #166534; }
+  .badge.warning { background: var(--amber-light); color: #92400e; }
+  .badge.danger { background: var(--red-light); color: #991b1b; }
+
+  /* Cache metric */
+  .cache-hero {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .cache-stat {
+    text-align: center;
+    padding: 18px;
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+  }
+
+  .cache-stat .val {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .cache-stat .lbl {
+    font-size: 11.5px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+  }
+
+  /* Summary list */
+  .summary-list {
+    list-style: none;
+    padding: 0;
+  }
+
+  .summary-list li {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .summary-list li:last-child { border-bottom: none; }
+
+  /* Trend items */
+  .trend-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .trend-item:last-child { border-bottom: none; }
+
+  .trend-bullet {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    margin-top: 6px;
+    flex-shrink: 0;
+  }
+
+  /* Model donut (simplified CSS) */
+  .model-chart-wrapper {
+    display: flex;
+    gap: 32px;
+    align-items: center;
+  }
+
+  .model-donut {
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .model-donut-center {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80px; height: 80px;
+    background: var(--bg);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+  }
+
+  .model-donut-center .total-val {
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  .model-donut-center .total-lbl {
+    font-size: 10px;
+    color: var(--text-secondary);
+  }
+
+  .model-legend-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+  }
+
+  .model-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+  }
+
+  .model-legend-item .dot {
+    width: 10px; height: 10px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+
+  .model-legend-item .name { flex: 1; }
+  .model-legend-item .cost { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .model-legend-item .pct { color: var(--text-secondary); font-size: 12px; min-width: 36px; text-align: right; }
+
+  /* Model progress bars */
+  .model-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+
+  .model-bar-label {
+    width: 200px;
+    font-size: 12.5px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .model-bar-track {
+    flex: 1;
+    height: 22px;
+    background: var(--bg-alt);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .model-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    padding-left: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #fff;
+    min-width: fit-content;
+  }
+
+  .model-bar-amount {
+    width: 80px;
+    text-align: right;
+    font-size: 13px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Recommendation cards */
+  .rec-card {
+    background: var(--bg);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    padding: 20px 22px;
+    margin-bottom: 12px;
+    box-shadow: var(--shadow-sm);
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 16px;
+    align-items: start;
+  }
+
+  .rec-num {
+    width: 30px; height: 30px;
+    background: var(--accent-light);
+    color: var(--accent);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .rec-body h4 {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .rec-body p, .rec-body ul {
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  .rec-body ul {
+    margin-top: 6px;
+    padding-left: 16px;
+  }
+
+  .rec-body ul li { margin-bottom: 2px; }
+
+  .rec-savings {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--green);
+    white-space: nowrap;
+  }
+
+  /* MCP section */
+  .mcp-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .mcp-stat-card {
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    padding: 18px;
+    text-align: center;
+  }
+
+  .mcp-stat-card .val {
+    font-size: 24px;
+    font-weight: 700;
+  }
+
+  .mcp-stat-card .lbl {
+    font-size: 11.5px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+  }
+
+  /* Scroll hint */
+  .scroll-top {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 40px;
+    height: 40px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 18px;
+    box-shadow: var(--shadow-md);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    transition: opacity 0.2s;
+  }
+
+  .scroll-top.visible { display: flex; }
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <h1>Claude Code</h1>
+    <p>Cost Analysis Report</p>
+  </div>
+  <nav id="sidebar-nav"></nav>
+  <div class="sidebar-footer" id="sidebar-footer"></div>
+</aside>
+
+<!-- Main Content -->
+<div class="main">
+<div class="content">
+
+  <!-- Overview -->
+  <div id="overview" class="section"></div>
+
+  <!-- Executive Summary -->
+  <div id="executive-summary" class="section"></div>
+
+  <!-- Projects -->
+  <div id="projects" class="section"></div>
+
+  <!-- Model Breakdown -->
+  <div id="models" class="section"></div>
+
+  <!-- Top Sessions -->
+  <div id="top-sessions" class="section"></div>
+
+  <!-- Daily Spend -->
+  <div id="daily-spend" class="section"></div>
+
+  <!-- Token Cost Breakdown -->
+  <div id="tokens" class="section"></div>
+
+  <!-- Cache Efficiency -->
+  <div id="cache" class="section"></div>
+
+  <!-- Recommendations -->
+  <div id="recommendations" class="section"></div>
+
+  <!-- Model Recommendations -->
+  <div id="model-recs" class="section"></div>
+
+  <!-- Trends -->
+  <div id="trends" class="section"></div>
+
+  <!-- MCP -->
+  <div id="mcp" class="section"></div>
+
+</div>
+</div>
+
+<!-- Scroll to top button -->
+<button class="scroll-top" id="scrollTop" title="Scroll to top">&#8593;</button>
+
+<script>
+// DATA_INJECTION_POINT — this line will be replaced with: window.REPORT_DATA = {...};
+</script>
+
+<script>
+(function() {
+  var D = window.REPORT_DATA;
+  if (!D) return;
+
+  // --- Helpers ---
+  function $(id) { return document.getElementById(id); }
+  function fmt(n) {
+    if (n == null) return '$0.00';
+    return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function fmtInt(n) {
+    if (n == null) return '0';
+    return n.toLocaleString('en-US');
+  }
+  function esc(s) {
+    if (s == null) return '';
+    var div = document.createElement('div');
+    div.textContent = s;
+    return div.innerHTML;
+  }
+
+  // --- Section definitions for sidebar ---
+  var allSections = [
+    { id: 'overview',           icon: '&#9673;',  label: 'Overview',           data: D.header },
+    { id: 'executive-summary',  icon: '&#9733;',  label: 'Executive Summary',  data: D.executive_summary },
+    { id: 'projects',           icon: '&#9635;',  label: 'Projects',           data: D.projects },
+    { id: 'models',             icon: '&#9683;',  label: 'Model Breakdown',    data: D.models },
+    { id: 'top-sessions',       icon: '&#9650;',  label: 'Top Sessions',       data: D.top_sessions },
+    { id: 'daily-spend',        icon: '&#9636;',  label: 'Daily Spend',        data: D.daily_spend },
+    { id: 'tokens',             icon: '&#9711;',  label: 'Token Costs',        data: D.token_breakdown },
+    { id: 'cache',              icon: '&#8644;',  label: 'Cache Efficiency',   data: D.cache_efficiency },
+    { id: 'recommendations',    icon: '&#10003;', label: 'Recommendations',    data: D.recommendations },
+    { id: 'model-recs',         icon: '&#8693;',  label: 'Model Recs',         data: D.model_recommendations },
+    { id: 'trends',             icon: '&#8594;',  label: 'Trends',             data: D.trends },
+    { id: 'mcp',                icon: '&#9881;',  label: 'MCP Usage',          data: D.mcp }
+  ];
+
+  // Determine which sections have data
+  var activeSections = [];
+  allSections.forEach(function(s) {
+    var hasData = s.data != null;
+    if (hasData && Array.isArray(s.data)) hasData = s.data.length > 0;
+    if (hasData) {
+      activeSections.push(s);
+    } else {
+      var el = $(s.id);
+      if (el) el.style.display = 'none';
+    }
+  });
+
+  // --- Sidebar nav ---
+  var navEl = $('sidebar-nav');
+  var navHTML = '';
+  activeSections.forEach(function(s, i) {
+    navHTML += '<a href="#' + s.id + '"' + (i === 0 ? ' class="active"' : '') + '>' +
+      '<span class="nav-icon">' + s.icon + '</span> ' + esc(s.label) + '</a>';
+  });
+  navEl.innerHTML = navHTML;
+
+  // --- Sidebar footer ---
+  var footerEl = $('sidebar-footer');
+  var src = D.header.pricing_source || 'platform.claude.com';
+  var genDate = D.header.period_end || '';
+  footerEl.innerHTML = 'Source: ' + esc(src.replace(/ \(.*/, '')) + '<br>Generated ' + esc(genDate);
+
+  // ==========================================
+  // SECTION: Overview
+  // ==========================================
+  (function() {
+    var h = D.header;
+    if (!h) return;
+    var el = $('overview');
+    var html = '<div class="page-header"><h2>Claude Code Cost Analysis</h2><div class="header-meta">';
+    html += '<span>Pricing source: <strong>' + esc(h.pricing_source) + '</strong></span>';
+    html += '<span>Period: <strong>' + esc(h.period_start) + '</strong> to <strong>' + esc(h.period_end) + '</strong></span>';
+    html += '<span>Sessions: <strong>' + fmtInt(h.sessions) + '</strong></span>';
+    html += '</div>';
+    if (h.warning) {
+      html += '<div class="warning-badge">&#9888; ' + esc(h.warning) + '</div>';
+    }
+    html += '</div>';
+
+    // Stat cards
+    html += '<div class="stat-row">';
+    html += '<div class="stat-card"><div class="label">Total Cost</div><div class="value accent">' + fmt(h.total_cost) + '</div><div class="sub">' + fmtInt(h.days_analyzed) + ' days analyzed</div></div>';
+    html += '<div class="stat-card"><div class="label">Sessions</div><div class="value">' + fmtInt(h.sessions) + '</div><div class="sub">' + fmtInt(h.project_count) + ' projects</div></div>';
+    if (h.cost_per_hour != null) {
+      html += '<div class="stat-card"><div class="label">Cost / Hour</div><div class="value">' + fmt(h.cost_per_hour) + '</div><div class="sub">active time</div></div>';
+    }
+    if (D.executive_summary && D.executive_summary.total_savings) {
+      html += '<div class="stat-card"><div class="label">Est. Monthly Savings</div><div class="value green">~' + fmt(D.executive_summary.total_savings).replace('$', '$') + '</div><div class="sub">if recommendations applied</div></div>';
+    }
+    html += '</div>';
+
+    // vs last run
+    if (h.vs_last_run) {
+      var v = h.vs_last_run;
+      var arrow = v.pct_change >= 0 ? '&#9650;' : '&#9660;';
+      var color = v.pct_change >= 0 ? 'var(--red)' : 'var(--green)';
+      html += '<div class="card" style="padding:16px 22px;margin-bottom:16px;">';
+      html += '<div style="font-size:13px;color:var(--text-secondary);">';
+      html += '<strong>vs Last Run (' + esc(v.prev_date) + '):</strong> ' + fmt(v.prev_cost) + ' &rarr; ' + fmt(v.current_cost);
+      html += ' <span style="color:' + color + ';font-weight:600;">' + arrow + ' ' + Math.abs(v.pct_change) + '%</span>';
+      html += '</div></div>';
+    }
+
+    // budget
+    if (h.budget) {
+      var b = h.budget;
+      var budgetColor = b.status === 'OVER' ? 'var(--red)' : 'var(--green)';
+      var statusLabel = b.status === 'OVER' ? 'Over budget' : 'Under budget';
+      html += '<div class="card" style="padding:16px 22px;margin-bottom:16px;">';
+      html += '<div style="font-size:13px;color:var(--text-secondary);">';
+      html += '<strong>Budget:</strong> ' + fmt(b.limit) + '/month &middot; Pace: ' + fmt(b.pace) + '/month';
+      html += ' <span style="color:' + budgetColor + ';font-weight:600;">' + statusLabel + ' by ' + b.pct_diff + '%</span>';
+      html += '</div></div>';
+    }
+
+    el.innerHTML = html;
+  })();
+
+  // ==========================================
+  // SECTION: Executive Summary
+  // ==========================================
+  (function() {
+    var es = D.executive_summary;
+    if (!es) return;
+    var el = $('executive-summary');
+    var html = '<div class="section-title"><span class="icon">&#9733;</span> Executive Summary</div>';
+
+    // Green gradient card with actions
+    html += '<div class="card" style="margin-bottom:20px;background:linear-gradient(135deg,#f0fdf4 0%,#ecfdf5 100%);border-color:#bbf7d0;">';
+    html += '<div style="font-size:13px;font-weight:600;color:#166534;margin-bottom:12px;">Top ' + (es.actions ? es.actions.length : 0) + ' Actions to Reduce Spend</div>';
+    html += '<div style="display:flex;flex-direction:column;gap:12px;">';
+    if (es.actions) {
+      es.actions.forEach(function(a, i) {
+        html += '<div style="display:flex;align-items:flex-start;gap:12px;">';
+        html += '<div style="width:24px;height:24px;background:#166534;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">' + (i + 1) + '</div>';
+        html += '<div>';
+        html += '<div style="font-size:13px;font-weight:600;color:#166534;">' + esc(a.title) + ' <span style="font-weight:400;color:#15803d;">(' + esc(a.detail) + ')</span></div>';
+        html += '<div style="font-size:12px;color:#15803d;">Saves ~' + fmt(a.savings) + '/month</div>';
+        html += '</div></div>';
+      });
+    }
+    html += '</div></div>';
+
+    // Model note
+    if (es.model_note) {
+      html += '<div class="card" style="padding:16px 22px;">';
+      html += '<div style="font-size:13px;color:var(--text-secondary);"><strong>Model downgrades:</strong> ' + esc(es.model_note) + '</div>';
+      html += '</div>';
+    }
+
+    el.innerHTML = html;
+  })();
+
+  // ==========================================
+  // SECTION: Projects
+  // ==========================================
+  (function() {
+    var projects = D.projects;
+    if (!projects || !projects.length) return;
+    var el = $('projects');
+    var totalCost = D.header.total_cost || 1;
+
+    var html = '<div class="section-title"><span class="icon">&#9635;</span> Project Summary</div>';
+    html += '<div class="card"><table><thead><tr><th>Project</th><th class="num">Sessions</th><th class="num">Cost</th><th>Share</th></tr></thead><tbody>';
+
+    projects.forEach(function(p) {
+      var pct = (p.cost / totalCost * 100).toFixed(1);
+      html += '<tr>';
+      html += '<td><strong>' + esc(p.name) + '</strong></td>';
+      html += '<td class="num">' + fmtInt(p.sessions) + '</td>';
+      html += '<td class="num">' + fmt(p.cost) + '</td>';
+      html += '<td><div style="display:flex;align-items:center;gap:8px;"><div style="width:100px;height:8px;background:var(--bg-alt);border-radius:4px;overflow:hidden;"><div style="width:' + pct + '%;height:100%;background:var(--accent);border-radius:4px;"></div></div><span style="font-size:11px;color:var(--text-secondary);">' + pct + '%</span></div></td>';
+      html += '</tr>';
+    });
+
+    html += '</tbody></table>';
+
+    if (D.remaining_projects) {
+      var rp = D.remaining_projects;
+      var rpPct = (rp.cost / totalCost * 100).toFixed(1);
+      html += '<div class="table-footer">+ ' + fmtInt(rp.count) + ' more projects (' + fmt(rp.cost) + ' total, ' + rpPct + '% of spend)</div>';
+    }
+
+    html += '</div>';
+    el.innerHTML = html;
+  })();
+
+  // ==========================================
+  // SECTION: Model Breakdown
+  // ==========================================
+  (function() {
+    var models = D.models;
+    if (!models || !models.length) return;
+    var el = $('models');
+    var totalCost = D.header.total_cost || 1;
+
+    // Gradient pairs for model bars
+    var gradients = [
+      ['#4f46e5', '#7c3aed'],
+      ['#6366f1', '#a78bfa'],
+      ['#0ea5e9', '#38bdf8'],
+      ['#14b8a6', '#5eead4'],
+      ['#f59e0b', '#fbbf24'],
+      ['#10b981', '#6ee7b7'],
+      ['#ec4899', '#f472b6'],
+      ['#8b5cf6', '#c084fc']
+    ];
+
+    var html = '<div class="section-title"><span class="icon">&#9683;</span> Model Breakdown</div>';
+    html += '<div class="card"><div style="margin-bottom:24px;">';
+
+    models.forEach(function(m, i) {
+      var pct = (m.cost / totalCost * 100).toFixed(1);
+      var grad = gradients[i % gradients.length];
+      var label = m.name.replace('claude-', '').replace(/-\d{8}$/, '');
+      var minW = parseFloat(pct) < 1 ? 'min-width:4px;' : '';
+      html += '<div class="model-bar-row">';
+      html += '<div class="model-bar-label">' + esc(label) + '</div>';
+      html += '<div class="model-bar-track"><div class="model-bar-fill" style="width:' + pct + '%;background:linear-gradient(90deg,' + grad[0] + ',' + grad[1] + ');' + minW + '">' + (parseFloat(pct) >= 3 ? pct + '%' : '') + '</div></div>';
+      html += '<div class="model-bar-amount">' + fmt(m.cost) + '</div>';
+      html += '</div>';
+    });
+
+    html += '</div>';
+
+    // Tier summary
+    if (D.model_tiers) {
+      var t = D.model_tiers;
+      html += '<div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--text-secondary);padding-top:14px;border-top:1px solid var(--border);">';
+      html += '<span><strong style="color:var(--text);">' + t.opus_pct + '%</strong> Opus models (' + fmt(t.opus_cost) + ')</span>';
+      html += '<span><strong style="color:var(--text);">' + t.sonnet_pct + '%</strong> Sonnet models (' + fmt(t.sonnet_cost) + ')</span>';
+      html += '<span><strong style="color:var(--text);">' + t.haiku_pct + '%</strong> Haiku models (' + fmt(t.haiku_cost) + ')</span>';
+      html += '</div>';
+    }
+
+    html += '</div>';
+    el.innerHTML = html;
+  })();
+
+  // ==========================================
+  // SECTION: Top Sessions
+  // ==========================================
+  (function() {
+    var sessions = D.top_sessions;
+    if (!sessions || !sessions.length) return;
+    var el = $('top-sessions');
+
+    var html = '<div class="section-title"><span class="icon">&#9650;</span> Top ' + sessions.length + ' Sessions by Cost</div>';
+    html += '<div class="card" style="padding:0;overflow:hidden;"><table><thead><tr><th>Date</th><th>Project</th><th class="num">Duration</th><th class="num">Cost</th><th>Prompt</th></tr></thead><tbody>';
+
+    sessions.forEach(function(s) {
+      var costStyle = s.highlight ? 'color:var(--red);font-weight:600;' : 'font-weight:600;';
+      html += '<tr>';
+      html += '<td>' + esc(s.date) + '</td>';
+      html += '<td><strong>' + esc(s.project) + '</strong></td>';
+      html += '<td class="num">' + esc(s.duration) + '</td>';
+      html += '<td class="num" style="' + costStyle + '">' + fmt(s.cost) + '</td>';
+      html += '<td>' + esc(s.prompt) + '</td>';
+      html += '</tr>';
+    });
+
+    html += '</tbody></table></div>';
+    el.innerHTML = html;
+  })();
+
+  // ==========================================
+  // SECTION: Daily Spend
+  // ==========================================
+  (function() {
+    var daily = D.daily_spend;
+    if (!daily || !daily.length) return;
+    var el = $('daily-spend');
+
+    var html = '<div class="section-title"><span class="icon">&#9636;</span> Daily Spend (Top ' + daily.length + ' Days)</div>';
+    html += '<div class="card"><div class="bar-chart" id="dailyChart"></div></div>';
+    el.innerHTML = html;
+
+    var maxCost = daily[0].cost;
+    var chartEl = document.getElementById('dailyChart');
+
+    daily.forEach(function(d) {
+      var pct = (d.cost / maxCost * 100).toFixed(1);
+      var isHot = d.cost > 500;
+      var row = document.createElement('div');
+      row.className = 'bar-row';
+      row.innerHTML =
+        '<div class="bar-date">' + d.date + '</div>' +
+        '<div class="bar-track"><div class="bar-fill' + (isHot ? ' hot' : '') + '" style="width:' + pct + '%;"></div></div>' +
+        '<div class="bar-cost">' + fmt(d.cost) + '</div>' +
+        '<div class="bar-sessions">' + d.sessions + ' sess</div>';
+      chartEl.appendChild(row);
+    });
+  })();
+
+  // ==========================================
+  // SECTION: Token Costs
+  // ==========================================
+  (function() {
+    var tb = D.token_breakdown;
+    if (!tb || !tb.length) return;
+    var el = $('tokens');
+
+    // Lighter gradient pair for each color
+    var gradientMap = {
+      '#4f46e5': ['#4f46e5', '#6366f1'],
+      '#0ea5e9': ['#0ea5e9', '#38bdf8'],
+      '#f59e0b': ['#f59e0b', '#fbbf24'],
+      '#10b981': ['#10b981', '#34d399']
+    };
+
+    var html = '<div class="section-title"><span class="icon">&#9711;</span> Token Cost Breakdown</div>';
+    html += '<div class="card"><div class="token-visual">';
+
+    // Stacked bar
+    html += '<div class="token-bar-container">';
+    tb.forEach(function(t) {
+      var grad = gradientMap[t.color] || [t.color, t.color];
+      var label = t.pct >= 5 ? t.pct + '%' : '';
+      html += '<div class="token-segment" style="flex:' + t.pct + ';background:linear-gradient(135deg,' + grad[0] + ',' + grad[1] + ');" title="' + esc(t.type) + ': ' + fmt(t.cost) + ' (' + t.pct + '%)">' + label + '</div>';
+    });
+    html += '</div>';
+
+    // Legend
+    html += '<div class="token-legend">';
+    tb.forEach(function(t) {
+      html += '<div class="legend-item">';
+      html += '<div class="legend-dot" style="background:' + t.color + ';"></div>';
+      html += '<span>' + esc(t.type) + '</span>';
+      html += '<span class="legend-value">' + fmt(t.cost) + '</span>';
+      html += '<span class="legend-pct">' + t.pct + '%</span>';
+      html += '</div>';
+    });
+    html += '</div></div>';
+
+    // Table
+    var totalTokens = 0;
+    tb.forEach(function(t) { totalTokens += t.tokens; });
+
+    html += '<table style="margin-top:20px;"><thead><tr><th>Type</th><th class="num">Tokens</th><th class="num">Cost</th><th class="num">%</th></tr></thead><tbody>';
+    tb.forEach(function(t) {
+      html += '<tr><td>' + esc(t.type) + '</td><td class="num">' + fmtInt(t.tokens) + '</td><td class="num">' + fmt(t.cost) + '</td><td class="num">' + t.pct + '%</td></tr>';
+    });
+    html += '</tbody><tfoot><tr style="font-weight:700;border-top:2px solid var(--border);"><td>Total</td><td class="num">' + fmtInt(totalTokens) + '</td><td class="num">' + fmt(D.token_total) + '</td><td class="num">100%</td></tr></tfoot></table>';
+
+    html += '</div>';
+    el.innerHTML = html;
+  })();
+
+  // ==========================================
+  // SECTION: Cache Efficiency
+  // ==========================================
+  (function() {
+    var ce = D.cache_efficiency;
+    if (!ce) return;
+    var el = $('cache');
+
+    var html = '<div class="section-title"><span class="icon">&#8644;</span> Cache Efficiency</div>';
+
+    // Hero stats
+    html += '<div class="cache-hero">';
+    html += '<div class="cache-stat"><div class="val">' + ce.reuse_ratio + 'x</div><div class="lbl">Reuse Ratio</div></div>';
+    html += '<div class="cache-stat"><div class="val" style="color:var(--green);">' + ce.cold_pct + '%</div><div class="lbl">Cold Sessions (' + ce.cold_sessions + '/' + ce.total_cache_sessions + ')</div></div>';
+    html += '<div class="cache-stat"><div class="val" style="color:var(--green);">' + fmt(ce.savings_vs_no_cache) + '</div><div class="lbl">Savings vs No-Cache</div></div>';
+    html += '</div>';
+
+    // Project table
+    if (ce.projects && ce.projects.length) {
+      html += '<div class="card" style="padding:0;overflow:hidden;">';
+      html += '<div style="padding:16px 22px 6px;font-size:14px;font-weight:600;">Cache Efficiency by Project (Top ' + ce.projects.length + ')</div>';
+      html += '<table><thead><tr><th>Project</th><th class="num">Reuse</th><th class="num">Cold</th><th class="num">CW Cost</th><th class="num">Savings</th><th>Status</th></tr></thead><tbody>';
+
+      ce.projects.forEach(function(p) {
+        var badgeClass = p.status === 'healthy' ? 'healthy' : (p.status === 'low reuse' ? 'warning' : 'danger');
+        html += '<tr>';
+        html += '<td><strong>' + esc(p.name) + '</strong></td>';
+        html += '<td class="num">' + p.reuse + 'x</td>';
+        html += '<td class="num">' + esc(p.cold) + '</td>';
+        html += '<td class="num">' + fmt(p.cw_cost) + '</td>';
+        html += '<td class="num">' + fmt(p.savings) + '</td>';
+        html += '<td><span class="badge ' + badgeClass + '">' + esc(p.status) + '</span></td>';
+        html += '</tr>';
+      });
+
+      html += '</tbody></table></div>';
+    }
+
+    el.innerHTML = html;
+  })();
+
+  // ==========================================
+  // SECTION: Recommendations
+  // ==========================================
+  (function() {
+    var recs = D.recommendations;
+    if (!recs || !recs.length) return;
+    var el = $('recommendations');
+
+    var html = '<div class="section-title"><span class="icon">&#10003;</span> Cost Savings Recommendations</div>';
+
+    recs.forEach(function(r, i) {
+      html += '<div class="rec-card">';
+      html += '<div class="rec-num">' + (i + 1) + '</div>';
+      html += '<div class="rec-body"><h4>' + esc(r.title) + '</h4>' + (r.body_html || '') + '</div>';
+      html += '<div class="rec-savings">~' + fmt(r.savings) + '</div>';
+      html += '</div>';
+    });
+
+    el.innerHTML = html;
+  })();
+
+  // ==========================================
+  // SECTION: Model Recommendations
+  // ==========================================
+  (function() {
+    var mr = D.model_recommendations;
+    if (!mr) return;
+    var el = $('model-recs');
+
+    var html = '<div class="section-title"><span class="icon">&#8693;</span> Model Recommendations</div>';
+
+    // Justified table
+    if (mr.justified && mr.justified.length) {
+      html += '<div class="card"><div class="card-header" style="color:var(--green);">Opus Justified</div>';
+      html += '<table><thead><tr><th>Project</th><th class="num">Cost</th><th>Reason</th></tr></thead><tbody>';
+      mr.justified.forEach(function(j) {
+        html += '<tr><td><strong>' + esc(j.project) + '</strong></td><td class="num">' + fmt(j.cost) + '</td><td>' + esc(j.reason) + '</td></tr>';
+      });
+      html += '</tbody></table></div>';
+    }
+
+    // Didn't need Opus
+    if (mr.didnt_need_opus && mr.didnt_need_opus.length) {
+      html += '<div class="card"><div class="card-header" style="color:var(--amber);">Didn\'t Need Opus &mdash; Sonnet saves ~80%</div>';
+      html += '<table><thead><tr><th>Project</th><th class="num">Opus Cost</th><th class="num">Potential Savings</th></tr></thead><tbody>';
+      mr.didnt_need_opus.forEach(function(d) {
+        html += '<tr><td>' + esc(d.project) + '</td><td class="num">' + fmt(d.cost) + '</td><td class="num" style="color:var(--green);">~' + fmt(d.savings) + '</td></tr>';
+      });
+      html += '</tbody></table></div>';
+    }
+
+    // Didn't need Sonnet
+    if (mr.didnt_need_sonnet && mr.didnt_need_sonnet.length) {
+      html += '<div class="card"><div class="card-header" style="color:var(--teal);">Didn\'t Need Sonnet &mdash; Haiku saves ~67%</div>';
+      html += '<table><thead><tr><th>Project</th><th class="num">Sonnet Cost</th><th class="num">Potential Savings</th></tr></thead><tbody>';
+      mr.didnt_need_sonnet.forEach(function(d) {
+        html += '<tr><td>' + esc(d.project) + '</td><td class="num">' + fmt(d.cost) + '</td><td class="num" style="color:var(--green);">~' + fmt(d.savings) + '</td></tr>';
+      });
+      html += '</tbody></table></div>';
+    }
+
+    // Total savings footer
+    if (mr.total_savings != null) {
+      // Add to the last card
+      var cards = el.querySelectorAll ? null : null;
+      html += '<div class="card" style="padding:10px 14px;font-size:12px;color:var(--text-secondary);font-style:italic;background:var(--bg-alt);">Total model savings: ' + fmt(mr.total_savings) + ' (' + (mr.total_pct || 0) + '% of spend)</div>';
+    }
+
+    el.innerHTML = html;
+  })();
+
+  // ==========================================
+  // SECTION: Trends
+  // ==========================================
+  (function() {
+    var trends = D.trends;
+    if (!trends || !trends.length) return;
+    var el = $('trends');
+
+    var html = '<div class="section-title"><span class="icon">&#8594;</span> Key Trends</div>';
+    html += '<div class="card">';
+
+    trends.forEach(function(t) {
+      html += '<div class="trend-item">';
+      html += '<div class="trend-bullet" style="background:' + (t.color || 'var(--accent)') + ';"></div>';
+      html += '<div>' + (t.text || '') + '</div>';
+      html += '</div>';
+    });
+
+    html += '</div>';
+    el.innerHTML = html;
+  })();
+
+  // ==========================================
+  // SECTION: MCP Usage
+  // ==========================================
+  (function() {
+    var mcp = D.mcp;
+    if (!mcp) return;
+    var el = $('mcp');
+
+    var html = '<div class="section-title"><span class="icon">&#9881;</span> MCP Usage</div>';
+
+    // Stat grid
+    html += '<div class="mcp-grid" style="margin-bottom:16px;">';
+    html += '<div class="mcp-stat-card"><div class="val" style="color:var(--accent);">' + mcp.mcp_sessions + ' <span style="font-size:14px;color:var(--text-secondary);font-weight:400;">/ ' + mcp.total_sessions + '</span></div><div class="lbl">Sessions with MCP</div></div>';
+    html += '<div class="mcp-stat-card"><div class="val" style="color:var(--amber);">' + fmt(mcp.mcp_avg_cost) + '</div><div class="lbl">MCP Avg Cost</div></div>';
+    html += '<div class="mcp-stat-card"><div class="val" style="color:var(--green);">' + fmt(mcp.non_mcp_avg_cost) + '</div><div class="lbl">Non-MCP Avg Cost</div></div>';
+    html += '<div class="mcp-stat-card"><div class="val" style="color:var(--purple);">+' + mcp.premium_pct + '%</div><div class="lbl">MCP Cost Premium</div></div>';
+    html += '</div>';
+
+    // Top tools
+    if (mcp.top_tools && mcp.top_tools.length) {
+      html += '<div class="card"><div class="card-header">Top MCP Tools</div>';
+      html += '<div style="display:flex;gap:12px;">';
+      mcp.top_tools.forEach(function(t) {
+        html += '<div style="flex:1;background:var(--bg-alt);border-radius:var(--radius-sm);padding:16px;text-align:center;">';
+        html += '<div style="font-size:24px;font-weight:700;color:var(--accent);">' + fmtInt(t.calls) + '</div>';
+        html += '<div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">' + esc(t.name) + ' calls</div>';
+        html += '</div>';
+      });
+      html += '</div></div>';
+    }
+
+    el.innerHTML = html;
+  })();
+
+  // ==========================================
+  // Scroll-spy, smooth-scroll, scroll-to-top
+  // ==========================================
+  var navLinks = document.querySelectorAll('.sidebar nav a');
+  var sections = [];
+
+  navLinks.forEach(function(link) {
+    var id = link.getAttribute('href').substring(1);
+    var sectionEl = document.getElementById(id);
+    if (sectionEl && sectionEl.style.display !== 'none') {
+      sections.push({ id: id, el: sectionEl, link: link });
+    }
+  });
+
+  function updateActiveLink() {
+    var scrollY = window.scrollY + 80;
+    var current = sections[0];
+
+    for (var i = 0; i < sections.length; i++) {
+      if (sections[i].el.offsetTop <= scrollY) {
+        current = sections[i];
+      }
+    }
+
+    navLinks.forEach(function(l) { l.classList.remove('active'); });
+    if (current) current.link.classList.add('active');
+  }
+
+  // Scroll to top button
+  var scrollBtn = document.getElementById('scrollTop');
+
+  function updateScrollBtn() {
+    if (window.scrollY > 400) {
+      scrollBtn.classList.add('visible');
+    } else {
+      scrollBtn.classList.remove('visible');
+    }
+  }
+
+  scrollBtn.addEventListener('click', function() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  // Smooth scroll for nav links
+  navLinks.forEach(function(link) {
+    link.addEventListener('click', function(e) {
+      e.preventDefault();
+      var id = this.getAttribute('href').substring(1);
+      var target = document.getElementById(id);
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  });
+
+  // Throttled scroll handler
+  var ticking = false;
+  window.addEventListener('scroll', function() {
+    if (!ticking) {
+      window.requestAnimationFrame(function() {
+        updateActiveLink();
+        updateScrollBtn();
+        ticking = false;
+      });
+      ticking = true;
+    }
+  });
+
+  updateActiveLink();
+})();
+</script>
+</body>
+</html>
