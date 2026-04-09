@@ -89,7 +89,12 @@ window.REPORT_DATA = {
 
   recommendations: [            // sorted by savings desc, max 8, skip < $1
     { title: "Session Management Commands", savings: 652,
-      body_html: "<ul><li><code>/clear</code>: Wipe history</li>...</ul>" }
+      body_html: "<p>Stats about the problem detected.</p><div class='rec-action'><strong>What to do:</strong><ul><li>specific action 1</li><li>specific action 2</li></ul></div>" }
+    // IMPORTANT: body_html MUST include TWO parts:
+    //   1. Problem stats (1-2 lines, what was detected)
+    //   2. Action block (wrapped in <div class='rec-action'>) with specific
+    //      steps from the ACTION section in recommendations.md
+    // Never show stats without actions. The action is the most important part.
   ],
 
   model_recommendations: {

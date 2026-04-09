@@ -47,9 +47,12 @@ Your sessions show accelerating costs as context grows:
 - Average context growth ratio: X.Xx (last turn vs first turn cache size)
 - Worst: "PROMPT..." grew from $X.XX/turn to $X.XX/turn over NN turns
 
-ACTION: Start a new session when switching tasks. Use /clear between unrelated
-tasks. After ~20-25 turns, consider starting fresh — the last 10 turns of a
-long session often cost more than the first 20 combined.
+ACTION:
+  1. Run /compact every 20 turns to compress context
+  2. If your session exceeds 25 turns, start a new one — paste a 2-3 line
+     summary of where you left off instead of carrying all prior context
+  3. Use /clear between unrelated tasks in the same session
+  4. Check turn count with /cost — if it's climbing, compress or restart
 
 Estimated savings: ~$XX.XX
 ```
@@ -73,9 +76,12 @@ You opened multiple short sessions for the same project on the same day:
 - PROJECT: N sessions on DATE (avg M turns each), N-1 redundant cold starts = ~$X.XX wasted
 [repeat for each flagged group, max 5]
 
-ACTION: Keep one session open for related tasks instead of starting fresh.
-Batch questions and edits. Use /clear between subtasks rather than closing
-and reopening Claude Code.
+ACTION:
+  1. Before opening Claude Code, list all related tasks you need done
+  2. Open one session and work through them sequentially
+  3. Use /clear between subtasks instead of quitting and reopening
+  4. Each new session pays a cold-start tax (~$X.XX) — staying in one
+     session avoids paying it repeatedly
 
 Estimated savings: ~$XX.XX
 ```
@@ -100,9 +106,13 @@ re-write. Detected N idle gaps (>5 min) across M sessions:
 - Total estimated re-write cost from idle gaps: $XX.XX
 - Worst: "PROMPT..." had N gaps totaling Xm -> $X.XX in re-writes
 
-ACTION: Finish your current task before stepping away. For long breaks,
-starting a fresh session with a focused prompt is often cheaper than
-resuming a large stale context.
+ACTION:
+  1. If stepping away for >5 minutes, run /compact first — this preserves
+     key context at a fraction of the re-cache cost
+  2. If stepping away for >30 minutes, finish your current task and close
+     the session — starting fresh is cheaper than re-caching 100K+ tokens
+  3. When returning after a break, start a new session with a focused prompt
+     ("continue implementing X in file Y") rather than resuming stale context
 
 Estimated savings: ~$XX.XX
 ```
@@ -125,8 +135,12 @@ Your longest sessions show diminishing returns:
 - Before turn 20: avg $X.XX/turn | After turn 20: avg $X.XX/turn
 - Longest session: NN turns, $XX.XX total
 
-ACTION: Use /compact periodically in long sessions to compress context.
-After completing a subtask, consider /clear or a new session.
+ACTION:
+  1. Run /compact after completing each subtask (not just at the end)
+  2. After 25-30 turns, start a new session — paste a 2-3 line summary
+     of where you left off. This is cheaper than carrying 30 turns of context.
+  3. Check your running cost with /cost — if $/turn is climbing, it's time
+     to compress or restart
 ```
 
 No explicit savings formula — this is informational. Reference savings from A1.
@@ -208,9 +222,21 @@ Projects with CLAUDE.md files show more efficient sessions:
 - With CLAUDE.md: avg $X.XX/session, X turns
 - Without: avg $X.XX/session, X turns (XX% more expensive)
 
-ACTION: Add a CLAUDE.md to projects without one. Include coding conventions,
-file structure, and common patterns. Even 5 lines reduces exploration and
-correction turns.
+ACTION: Add a CLAUDE.md to projects without one. Start with this template:
+
+  # Project
+  Brief description of what this project does
+
+  # Stack
+  Language, framework, package manager
+
+  # Conventions
+  Naming patterns, file organization, key abstractions
+
+  # Key Files
+  Entry points, config locations, important modules
+
+  Even 5 lines reduces exploration and correction turns significantly.
 ```
 
 ---
@@ -310,8 +336,13 @@ COST CONCENTRATION
 - Your most expensive session: $XX.XX (XX% of total)
 - Optimizing your top 5 sessions alone could save ~$XX
 
-Focus the recommendations above on your most expensive sessions for
-maximum impact.
+ACTION:
+  1. Re-run with --project PROJECT for your most expensive project to
+     get targeted recommendations specific to that project
+  2. Review the top sessions table — identify which ones were avoidably
+     expensive (wrong model, too many turns, idle gaps)
+  3. Apply the other recommendations in this report to your top 5 sessions
+     first for maximum impact
 ```
 
 **Savings formula:** `sum(top_10_pct_session_costs) * 0.3` — assumes 30% reduction possible on concentrated expensive sessions.
@@ -334,8 +365,12 @@ Cost per turn varies across your projects:
   PROJECT                  $X.XX        NN         NN
   [sorted by $/turn descending, max 8 rows]
 
-Your most efficient project costs Xx less per turn. Consider what makes
-those sessions efficient and apply the same approach elsewhere.
+ACTION: Compare your most and least efficient projects:
+  - Common differences: model choice (Opus vs Sonnet), CLAUDE.md presence,
+    prompt specificity, session length
+  - Your most efficient project costs Xx less per turn — check if it uses
+    Sonnet, has a CLAUDE.md, or uses shorter sessions
+  - Apply the same patterns to your most expensive projects
 ```
 
 ---
@@ -379,6 +414,16 @@ PROMPT LENGTH vs SESSION COST
 - Detailed prompts (>100 chars): avg $X.XX/session, avg NN turns
 
 Detailed first prompts correlate with XX% lower session costs.
+
+ACTION:
+  1. Before starting a session, draft your prompt in a text editor first
+  2. Include: what you want built, which files to modify, constraints,
+     and what NOT to change
+  3. Example of a good first prompt:
+     "Add pagination to the /api/users endpoint in src/routes/users.ts.
+     Use cursor-based pagination matching the pattern in orders.ts.
+     Don't modify the database schema."
+  4. This eliminates 3-5 correction turns that each cost $X.XX+
 ```
 
 ---
@@ -446,11 +491,15 @@ single conversation. Consider whether subtasks could run as separate sessions
 or subagents — if each page, component, or test is independent, there's no
 reason to carry prior context forward.
 
-ACTION: Break marathon sessions into focused sub-sessions:
-  - If tasks are independent, run them as separate sessions or subagents
-  - If tasks share context, use a coordinator that spawns subagents
-  - Batch related work across sessions rather than accumulating in one
-  - Use /compact periodically to reset the quadratic growth curve
+ACTION: Ask yourself: does step 50 need to know about step 1? If not,
+split the work:
+  1. Batch into independent sessions — e.g., "Process files 1-20" in one
+     session, "21-40" in another. Each starts with fresh, cheap context.
+  2. Use subagents for parallel work — tell Claude: "spawn a subagent for
+     each component" so each gets its own context window
+  3. If work must be sequential, run /compact every 20-30 turns to reset
+     the growth curve before it gets expensive
+  4. Use /cost to monitor — if $/turn exceeds $1, it's time to split
 
 Estimated savings: ~$XX.XX
 ```
